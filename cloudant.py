@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import os
+import random
 import re
 import struct
 import time
@@ -24,8 +25,8 @@ DBNAME_PAT = r"shards/[a-fA-F0-9]{8}-[a-fA-F0-9]{8}/([^.]+)"
 DBNAME_RE = re.compile(DBNAME_PAT)
 
 
-def dbcopy_docid(str):
-    if not isinstance(str, basestring):
+def dbcopy_docid(key):
+    if not isinstance(key, basestring):
         raise ValueError("only strings are currently supported")
     # First two bytes are 131, 109 for the external term format
     external = "\x83m" + struct.pack(">I", len(key)) + str(key)
@@ -53,6 +54,11 @@ class EnvironmentConfig(object):
         "TESTY_CLUSTER_LB": None,
         "TESTY_CLUSTER_NODENAMES": None,
         "TESTY_CLUSTER_NETLOC": "127.0.0.1:5984",
+        "TESTY_NODE_NAMES": ",".join([
+            "node1@127.0.0.1",
+            "node2@127.0.0.1",
+            "node3@127.0.0.1"
+        ]),
         "TESTY_NODE_PUBLIC_INTERFACES": ",".join([
             "127.0.0.1:15984",
             "127.0.0.1:25984",
@@ -85,21 +91,31 @@ class EnvironmentConfig(object):
             if k in os.environ:
                 self.cfg[k] = os.environ[k]
 
+        # Set node information
+        names = self.cfg.get("TESTY_NODE_NAMES")
         public = self.cfg.get("TESTY_NODE_PUBLIC_INTERFACES")
         private = self.cfg.get("TESTY_NODE_PRIVATE_INTERFACES")
         self.nodes = []
 
+        for n in names.split(","):
+            self.nodes.append({"name": n})
+
         if public is not None:
-            for n in public.split(","):
-                self.nodes.append({"public": n})
-            if private is not None:
-                if len(private.split(",")) != len(self.nodes):
-                    raise ValueError("Mismatched not interface settings")
-                for i, n in enumerate(private.split(",")):
-                    self.nodes[i]["private"] = n
-        elif private is not None:
-            for n in private.split(","):
-                self.nodes.append({"private": n})
+            if len(public.split(",")) != len(self.nodes):
+                raise ValueError("Mismatched public interfaces")
+            for i, n in enumerate(public.split(",")):
+                self.nodes[i]["public"] = n
+
+        if private is not None:
+            if len(private.split(",")) != len(self.nodes):
+                raise ValueError("Mismatched private interfaces")
+            for i, n in enumerate(private.split(",")):
+                self.nodes[i]["private"] = n
+
+        nodes = {}
+        for n in self.nodes:
+            nodes[n["name"]] = n
+        self.nodes = nodes
 
     def __getattr__(self, name):
         envname = "TESTY_{}".format(name.upper())
@@ -193,27 +209,6 @@ class Server(object):
             raise ValueError("Invalid server URL: {}".format(url))
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
-    @staticmethod
-    def default():
-        """Return a default server instance"""
-        return Server(CONFIG.cluster_url, auth=CONFIG.get_user("admin"))
-
-    @staticmethod
-    def public_nodes():
-        "Return a list of server instances for each node's public interface"
-        ret = []
-        for node in CONFIG.nodes:
-            url = "".join(CONFIG.protocol, "://", node["public"])
-            ret.append(Server(url, auth=CONFIG.get_user("admin")))
-
-    @staticmethod
-    def private_nodes():
-        "Return a list of server instances for each node's private interface"
-        ret = []
-        for node in CONFIG.nodes:
-            url = "".join(CONFIG.protocol, "://", node["private"])
-            ret.append(Server(url, auth=CONFIG.get_user("admin")))
-
     def welcome(self):
         r = self.res.get("")
         return r.json()
@@ -266,7 +261,7 @@ class Database(object):
         return srv.db(quote(parts.path.lstrip("/")))
 
     def path(self, *args):
-        return "/".join([self.name] + args)
+        return "/".join((self.name,) + args)
 
     def create(self, **kwargs):
         params = self._params(kwargs)
@@ -288,38 +283,48 @@ class Database(object):
 
     def info(self, **kwargs):
         params = self._params(kwargs)
-        return self.srv.res.get(self.name, params=params)
+        return self.srv.res.get(self.name, params=params).json()
+
+    def compact(self, wait=False, **kwargs):
+        params = self._params(kwargs)
+        r = self.srv.res.post(self.path("_compact"), params=params)
+        if not wait:
+            return r
+        while self.info()["compact_running"]:
+            pass
 
     def all_docs(self, **kwargs):
-        path = "/".join([self.name, "_all_docs"])
-        return self._exec_view(path, **kwargs)
+        return self._exec_view(self.path("_all_docs"), **kwargs)
 
     def doc_delete(self, doc_or_docid, **kwargs):
-        if isinstance(doc_or_docid, (str, unicode)) and "rev" not in kwargs:
+        if isinstance(doc_or_docid, basestring) and "rev" not in kwargs:
             docid = doc_or_docid
             rev = self.doc_open(docid)["_rev"]
-        elif isinstance(doc_or_docid, (str, unicode)):
+        elif isinstance(doc_or_docid, basestring):
             docid = doc_or_docid
             rev = kwargs["rev"]
         else:
             docid = doc_or_docid["_id"]
             rev = doc_or_docid["_rev"]
-        path = "/".join((self.name, docid))
         params = self._params(kwargs)
         params["rev"] = rev
-        return self.srv.res.delete(path, params=params).json()
+        ret = self.srv.res.delete(self.path(docid), params=params).json()
+        if isinstance(doc_or_docid, basestring):
+            return ret
+        else:
+            doc_or_docid["_rev"] = ret["rev"]
+            return doc_or_docid
 
     def doc_open(self, docid, **kwargs):
-        path = "/".join(self.name, docid)
         params = self._params(kwargs)
-        return self.srv.res.get(path, params=params).json()
+        return self.srv.res.get(self.path(docid), params=params).json()
 
     def doc_save(self, doc, **kwargs):
         if "_id" not in doc:
-            path = self.name
+            path = self.path()
             func = self.srv.res.post
         else:
-            path = "/".join((self.name, quote(doc["_id"])))
+            path = self.path(quote(doc["_id"]))
             func = self.srv.res.put
         params = self._params(kwargs)
         r = func(path, data=json.dumps(doc), params=params)
@@ -328,7 +333,7 @@ class Database(object):
         return doc
 
     def view(self, ddoc, vname, **kwargs):
-        path = "/".join([self.name, "_design", ddoc, "_view", vname])
+        path = self.path("_design", ddoc, "_view", vname)
         return self._exec_view(path, **kwargs)
 
     def wait_for_indexers(self, **kwargs):
@@ -404,4 +409,16 @@ class ViewIterator(object):
             for row in self:
                 self._rows.append(row)
 
+
+def get_server(node=None, interface="private", user="admin"):
+    if node is None:
+        url = CONFIG.cluster_url
+    else:
+        url = "".join((CONFIG.protocol, "://", CONFIG.nodes[node][interface]))
+    return Server(url, auth=CONFIG.get_user(user))
+
+
+def random_node(interface="private", user="admin"):
+    name = random.choice(CONFIG.nodes.keys())
+    return get_server(node=name, interface=interface, user=user)
 

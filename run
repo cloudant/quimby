@@ -1,6 +1,6 @@
 #!/bin/bash
 
-`dirname $0`/venv/bin/nosetests -v -s \
+exec `dirname $0`/venv/bin/nosetests -v -s \
     --all-modules \
     --no-byte-compile \
     --with-xunit

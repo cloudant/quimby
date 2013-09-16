@@ -18,8 +18,9 @@ DDOC = {
 
 
 def test_removal():
-    db = cloudant.default_server().db("test_suite_db")
-    dbcopy = cloudant.default_server().db("test_suite_db_copy")
+    srv = cloudant.get_server()
+    db = srv.db("test_suite_db")
+    dbcopy = srv.db("test_suite_db_copy")
 
     db.reset()
     dbcopy.reset()

@@ -1,6 +1,15 @@
 #!/bin/bash
 
-exec `dirname $0`/venv/bin/nosetests -v -s \
+pushd `dirname $0` > /dev/null
+
+if [ ! -d ./venv/ ]; then
+    echo -n "Initializing virtualenv..."
+    virtualenv venv/ > /dev/null 2>&1
+    ./venv/bin/pip install -r requirements.txt >/dev/null 2>&1
+    echo "ok"
+fi
+
+exec ./venv/bin/nosetests -v -s \
     --all-modules \
     --no-byte-compile \
     --with-xunit

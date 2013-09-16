@@ -1,8 +1,12 @@
 
+import base64
+import contextlib as ctx
+import hashlib
 import json
 import logging
 import os
 import re
+import struct
 import time
 import urllib
 import urlparse
@@ -20,15 +24,115 @@ DBNAME_PAT = r"shards/[a-fA-F0-9]{8}-[a-fA-F0-9]{8}/([^.]+)"
 DBNAME_RE = re.compile(DBNAME_PAT)
 
 
+def dbcopy_docid(str):
+    if not isinstance(str, basestring):
+        raise ValueError("only strings are currently supported")
+    # First two bytes are 131, 109 for the external term format
+    external = "\x83m" + struct.pack(">I", len(key)) + str(key)
+    md5sum = hashlib.md5(external).digest()
+    b64 = base64.b64encode(md5sum).rstrip("=")
+    return b64.replace("/", "_").replace("+", "-")
+
+
 def quote(str):
     return urllib.quote(str, safe="")
 
 
-def _parse_dbname(name):
+def parse_shard_name(name):
     match = DBNAME_RE.match(name)
     if not match:
         return name
     return match.group(1)
+
+
+class EnvironmentConfig(object):
+
+    DEFAULTS = {
+        "TESTY_PROTOCOL": "http",
+        "TESTY_CLUSTER": None,
+        "TESTY_CLUSTER_LB": None,
+        "TESTY_CLUSTER_NODENAMES": None,
+        "TESTY_CLUSTER_NETLOC": "127.0.0.1:5984",
+        "TESTY_NODE_PUBLIC_INTERFACES": ",".join([
+            "127.0.0.1:15984",
+            "127.0.0.1:25984",
+            "127.0.0.1:35984"
+        ]),
+        "TESTY_NODE_PRIVATE_INTERFACES": ",".join([
+            "127.0.0.1:15986",
+            "127.0.0.1:25986",
+            "127.0.0.1:35986"
+        ]),
+        "TESTY_DB_ADMIN_USER": "adm",
+        "TESTY_DB_ADMIN_PASS": "pass",
+        "TESTY_DB_ADMIN_ROOT": None,
+        "TESTY_DB_WRITE_USER": None,
+        "TESTY_DB_WRITE_PASS": None,
+        "TESTY_DB_READ_USER": None,
+        "TESTY_DB_READ_PASS": None,
+        "TESTY_DB_URL": None,
+        "TESTY_DB_NAME": None,
+        "TESTY_SAVE_URL": None,
+        "TESTY_SAVE_USER": None,
+        "TESTY_SAVE_PASS": None,
+        "TESTY_RESULT_DIR": None,
+        "TESTY_TIMESTART": None
+    }
+
+    def __init__(self):
+        self.cfg = self.DEFAULTS.copy()
+        for k in self.cfg:
+            if k in os.environ:
+                self.cfg[k] = os.environ[k]
+
+        public = self.cfg.get("TESTY_NODE_PUBLIC_INTERFACES")
+        private = self.cfg.get("TESTY_NODE_PRIVATE_INTERFACES")
+        self.nodes = []
+
+        if public is not None:
+            for n in public.split(","):
+                self.nodes.append({"public": n})
+            if private is not None:
+                if len(private.split(",")) != len(self.nodes):
+                    raise ValueError("Mismatched not interface settings")
+                for i, n in enumerate(private.split(",")):
+                    self.nodes[i]["private"] = n
+        elif private is not None:
+            for n in private.split(","):
+                self.nodes.append({"private": n})
+
+    def __getattr__(self, name):
+        envname = "TESTY_{}".format(name.upper())
+        if envname not in self.cfg:
+            fmt = "'{}' object has no attribute '{}'"
+            raise AttributeError(fmt.format(self.__class__.__name__, name))
+        return self.cfg[envname]
+
+    @property
+    def cluster_url(self):
+        parts = (self.protocol, "://", self.cluster_netloc)
+        return "".join(parts)
+
+    def get_user(self, name):
+        if name == "admin":
+            if self.db_admin_user is not None:
+                return (self.db_admin_user, self.db_admin_pass)
+            else:
+                return None
+        elif name == "write":
+            if self.db_write_user is not None:
+                return (self.db_write_user, self.db_write_pass)
+            else:
+                return None
+        elif name == "read":
+            if self.db_read_user is not None:
+                return (self.db_read_user, self.db_read_pass)
+            else:
+                return None
+        raise ValueError("No user info for '{}'".format(name))
+
+
+CONFIG = EnvironmentConfig()
 
 
 class Resource(object):
@@ -43,6 +147,15 @@ class Resource(object):
             "Content-Type": "application/json"
         })
         self.check_status_code = True
+
+    @ctx.contextmanager
+    def return_errors(self):
+        original = self.check_status_code
+        self.check_status_code = False
+        try:
+            yield self
+        finally:
+            self.check_status_code = original
 
     def head(self, path, **kwargs):
         return self._req("head", path, kwargs)
@@ -79,6 +192,27 @@ class Server(object):
         if parts[2] or parts[3] or parts[4]:
             raise ValueError("Invalid server URL: {}".format(url))
         self.res = Resource(self.scheme, self.netloc, auth=auth)
+
+    @staticmethod
+    def default():
+        """Return a default server instance"""
+        return Server(CONFIG.cluster_url, auth=CONFIG.get_user("admin"))
+
+    @staticmethod
+    def public_nodes():
+        "Return a list of server instances for each node's public interface"
+        ret = []
+        for node in CONFIG.nodes:
+            url = "".join(CONFIG.protocol, "://", node["public"])
+            ret.append(Server(url, auth=CONFIG.get_user("admin")))
+
+    @staticmethod
+    def private_nodes():
+        "Return a list of server instances for each node's private interface"
+        ret = []
+        for node in CONFIG.nodes:
+            url = "".join(CONFIG.protocol, "://", node["private"])
+            ret.append(Server(url, auth=CONFIG.get_user("admin")))
 
     def welcome(self):
         r = self.res.get("")
@@ -130,6 +264,9 @@ class Database(object):
         srvurl = urlparse.urlunsplit(parts[:2] + ("", "", ""))
         srv = Server(srvurl)
         return srv.db(quote(parts.path.lstrip("/")))
+
+    def path(self, *args):
+        return "/".join([self.name] + args)
 
     def create(self, **kwargs):
         params = self._params(kwargs)
@@ -268,9 +405,3 @@ class ViewIterator(object):
                 self._rows.append(row)
 
 
-def default_server():
-    admuser = os.getenv("TEST_DB_ADMIN_USER", "adm")
-    admpass = os.getenv("TEST_DB_ADMIN_PASS", "pass")
-    auth = (admuser, admpass)
-    url = os.getenv("TESTY_DB_ADMIN_ROOT", "http://127.0.0.1:5984")
-    return Server(url, auth=auth)

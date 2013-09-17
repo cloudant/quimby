@@ -58,7 +58,7 @@ def test_doc_salt():
         node = cloudant.get_server(node=name, interface="private")
         for rng in smap["by_node"][name]:
             args = (rng, dbcopy.name, suffix)
-            shard = node.db("shards%2F{}%2F{}{}".format(*args))
+            shard = node.db("shards%%2F%s%%2F%s%s" % args)
             shard.compact(wait=True)
 
     # Readding row to source view and dbcopy db

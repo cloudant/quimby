@@ -118,10 +118,10 @@ class EnvironmentConfig(object):
         self.nodes = nodes
 
     def __getattr__(self, name):
-        envname = "TESTY_{}".format(name.upper())
+        envname = "TESTY_%s" % name.upper()
         if envname not in self.cfg:
-            fmt = "'{}' object has no attribute '{}'"
-            raise AttributeError(fmt.format(self.__class__.__name__, name))
+            fmt = "'%s' object has no attribute '%s'"
+            raise AttributeError(fmt % (self.__class__.__name__, name))
         return self.cfg[envname]
 
     @property
@@ -145,7 +145,7 @@ class EnvironmentConfig(object):
                 return (self.db_read_user, self.db_read_pass)
             else:
                 return None
-        raise ValueError("No user info for '{}'".format(name))
+        raise ValueError("No user info for '%s'" % name)
 
 
 CONFIG = EnvironmentConfig()
@@ -206,7 +206,7 @@ class Server(object):
         self.scheme = parts[0]
         self.netloc = parts[1]
         if parts[2] or parts[3] or parts[4]:
-            raise ValueError("Invalid server URL: {}".format(url))
+            raise ValueError("Invalid server URL: %s" % url)
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
     def welcome(self):
@@ -248,14 +248,14 @@ class Database(object):
     def __init__(self, server, name):
         self.srv = server
         if "/" in name:
-            raise ValueError("Invalid database name: {}".format(name))
+            raise ValueError("Invalid database name: %s" % name)
         self.name = name
 
     @staticmethod
     def from_url(url):
         parts = urlparse.urlsplit(url, "http", False)
         if parts[3] or parts[4]:
-            raise ValueError("Invalid databsae URL: {}".format(url))
+            raise ValueError("Invalid databsae URL: %s" % url)
         srvurl = urlparse.urlunsplit(parts[:2] + ("", "", ""))
         srv = Server(srvurl)
         return srv.db(quote(parts.path.lstrip("/")))

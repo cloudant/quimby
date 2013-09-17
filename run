@@ -2,9 +2,14 @@
 
 pushd `dirname $0` > /dev/null
 
+VIRTUALENV=`which virtualenv`
+if [[ -z $VIRTUALENV ]]; then
+    VIRTUALENV="/usr/local/bin/virtualenv"
+fi
+
 if [ ! -d ./venv/ ]; then
     echo -n "Initializing virtualenv..."
-    virtualenv venv/ > /dev/null 2>&1
+    $VIRTUALENV venv/ > /dev/null 2>&1
     ./venv/bin/pip install -r requirements.txt >/dev/null 2>&1
     echo "ok"
 fi

@@ -1,4 +1,4 @@
-Putin - DB Core Tests
-=====================
+Quimby - DB Core Tests
+======================
 
-![Dolphins!](http://meatcurtainofdoom.files.wordpress.com/2013/05/putin-with-dolphins.jpg)
+Yep.

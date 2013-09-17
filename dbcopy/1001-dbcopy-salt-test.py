@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 
 import cloudant
-import t
 
+from hamcrest import *
 
 DDOC = {
     "_id": "_design/foo",
@@ -33,8 +33,8 @@ def test_doc_salt():
     # Check that we have the expected dbcopy doc
     copydocid = cloudant.dbcopy_docid("test")
     copydoc1 = dbcopy.doc_open(copydocid)
-    t.eq(copydoc1["key"], "test", "DB Copy doc has the correct id")
-    t.eq(copydoc1["value"], 1, "DB Copy doc has the correct value")
+    assert_that(copydoc1, has_entry("key", "test"))
+    assert_that(copydoc1, has_entry("value", 1))
 
     # Remove the source view row
     db.doc_delete(doc1)
@@ -44,8 +44,7 @@ def test_doc_salt():
     # Check that the dbcopy doc is gone
     with db.srv.res.return_errors() as res:
         r = res.get(dbcopy.path(copydocid))
-        t.eq(r.status_code, 404, "DB copy doc should be gone")
-
+        assert_that(r.status_code, is_(404))
 
     # Get the shard map for the dbcopy db
     dbsdb = cloudant.random_node().db("dbs")
@@ -68,7 +67,7 @@ def test_doc_salt():
 
     # Check that our dbcopy doc is back
     copydoc2 = dbcopy.doc_open(copydocid)
-    t.ne(copydoc1["_rev"], copydoc2["_rev"], "Revision should have changed")
-    t.eq(copydoc2["key"], "test", "DB Copy doc key is still 'test'")
-    t.eq(copydoc2["value"], 1, "DB Copy doc vlaue is still 1")
-    t.isin("salt", copydoc2, "New dbcopy doc has a salt value")
+    assert_that(copydoc2["_rev"], is_not(copydoc1["_rev"]))
+    assert_that(copydoc2, has_entry("key", "test"))
+    assert_that(copydoc2, has_entry("value", 1))
+    assert_that(copydoc2, has_key("salt"))

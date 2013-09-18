@@ -344,6 +344,18 @@ class Database(object):
         doc["_rev"] = r.json()["rev"]
         return doc
 
+    def bulk_docs(self, docs, **kwargs):
+        params = self._params(kwargs)
+        data = json.dumps({"docs": docs})
+        r = self.srv.res.post(self.path("_bulk_docs"), params=params, data=data)
+        ret = r.json()
+        for idx, result in enumerate(ret):
+            if "error" in result:
+                continue
+            docs[idx]["_id"] = result["id"]
+            docs[idx]["_rev"] = result["rev"]
+        return ret
+
     def view(self, ddoc, vname, **kwargs):
         path = self.path("_design", ddoc, "_view", vname)
         return self._exec_view(path, **kwargs)

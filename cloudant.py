@@ -263,6 +263,12 @@ class Database(object):
     def path(self, *args):
         return "/".join((self.name,) + args)
 
+    def exists(self, **kwargs):
+        params = self._params(kwargs)
+        with self.srv.res.return_errors() as res:
+            r = res.head(self.name, params=params)
+            return r.ok
+
     def create(self, **kwargs):
         params = self._params(kwargs)
         return self.srv.res.put(self.name, params=params)
@@ -314,6 +320,12 @@ class Database(object):
         else:
             doc_or_docid["_rev"] = ret["rev"]
             return doc_or_docid
+
+    def doc_exists(self, docid, **kwargs):
+        params = self._params(kwargs)
+        with self.srv.res.return_errors() as res:
+            r = res.head(self.path(docid), params=params)
+            return r.ok
 
     def doc_open(self, docid, **kwargs):
         params = self._params(kwargs)

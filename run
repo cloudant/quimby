@@ -17,4 +17,5 @@ fi
 exec ./venv/bin/nosetests -v -s \
     --all-modules \
     --no-byte-compile \
-    --with-xunit
+    --with-xunit \
+    $@

@@ -360,6 +360,12 @@ class Database(object):
         path = self.path("_design", ddoc, "_view", vname)
         return self._exec_view(path, **kwargs)
 
+    def changes(self, **kwargs):
+        is_continuous = kwargs.get("feed") == "continuous"
+        params = self._params(kwargs)
+        r = self.srv.res.get(self.path("_changes"), params=params, stream=True)
+        return Changes(self, r, is_continuous)
+
     def wait_for_indexers(self, **kwargs):
         self.srv.wait_for_indexers(dbname=self.name, **kwargs)
 
@@ -396,6 +402,102 @@ class ViewResult(object):
 
     def __iter__(self):
         return iter(self.rows)
+
+
+class Changes(object):
+    def __init__(self, db, resp, is_continuous):
+        self.db = db
+        self.resp = resp
+        if is_continuous:
+            self._gen = self._continuous
+        else:
+            self._gen = self._non_continuous
+        self._running = False
+        self._exhausted = False
+        self._results = None
+        self._last_seq = None
+
+    def __iter__(self):
+        self._running = True
+        try:
+            for change in self._gen(self.resp.iter_lines()):
+                yield change
+        finally:
+            self._running = False
+            self._exhausted = True
+
+    @property
+    def results(self):
+        if self._results is None:
+            self.read()
+        return self._results
+
+    @property
+    def last_seq(self):
+        if self._last_seq is None:
+            self.read()
+        return self._last_seq
+
+    def read(self):
+        if self._running:
+            raise RuntimeError("Error reading from streamed changes feed.")
+        if self._exhausted:
+            raise RuntimeError("Error reading from exhausted changes feed.")
+        self._results = []
+        i = iter(self)
+        for change in i:
+            if "last_seq" in change:
+                self._last_seq = change["last_seq"]
+                break
+            else:
+                self._results.append(change)
+        assert self._last_seq is not None
+        for change in i:
+            raise ValueError("Invalid change after last_seq: %r" % change)
+
+    def _continuous(self, line_iter):
+        for line in line_iter:
+            if not line.strip():
+                continue
+            yield json.loads(line)
+
+    def _non_continuous(self, line_iter):
+        state = "init"
+        for line in line_iter:
+            if not line.strip():
+                continue
+            if line.strip() == '{"results":[':
+                state = "starting"
+                break
+            else:
+                raise ValueError("Invalid changes line: %r" % line)
+        if state != "starting":
+            raise RuntimeError("Invalid changes feed state. Expected starting")
+        for line in line_iter:
+            if not line.strip():
+                continue
+            if line.strip() == "],":
+                state = "last_seq"
+                break
+            else:
+                yield json.loads(line.rstrip().rstrip(","))
+        if state != "last_seq":
+            raise RuntimeError("Invalid changes feed state. Expected last_seq")
+        for line in line_iter:
+            if not line.strip():
+                continue
+            if line.startswith('"last_seq"'):
+                yield json.loads('{' + line)
+                state = "finishing"
+                break
+            else:
+                raise ValueError("Invalid list_seq line: %r" % line)
+        if state != "finishing":
+            yield json
+        for line in line_iter:
+            if not line.strip():
+                continue
+            raise ValueError("Invalid changes feed data: %r" % line)
 
 
 class ViewIterator(object):

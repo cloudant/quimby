@@ -369,6 +369,17 @@ class Database(object):
     def wait_for_indexers(self, **kwargs):
         self.srv.wait_for_indexers(dbname=self.name, **kwargs)
 
+    def wait_for_change(self, since, timeout=5000):
+        c = self.changes(
+                feed="longpoll",
+                limit=1,
+                since=since,
+                timeout=timeout
+            )
+        if not len(c.results):
+            raise RuntimeError("No change")
+        return c.last_seq
+
     def _exec_view(self, path, **kwargs):
         data = None
         func = self.srv.res.get

@@ -157,6 +157,9 @@ class Resource(object):
         self.netloc = netloc
         if session is None:
             session = requests.session()
+            adapter = requests.adapters.HTTPAdapter(pool_maxsize=256)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
         self.s = session
         self.s.auth = auth
         self.s.headers.update({

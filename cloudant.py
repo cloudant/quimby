@@ -212,6 +212,47 @@ class Server(object):
             raise ValueError("Invalid server URL: %s" % url)
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
+    def welcome(self):
+        r = self.res.get("")
+        return r.json()
+
+    def active_tasks(self):
+        return self.res.get("_active_tasks").json()
+
+    def all_dbs(self):
+        return self.res.get("_all_dbs").json()
+
+    def db(self, name):
+        return Database(self, name)
+
+    def global_changes(self, **kwargs):
+        is_continuous = kwargs.get("feed") == "continuous"
+        params = self._params(kwargs)
+        r = self.res.get("_db_updates", params=params, stream=True)
+        return Changes(self, r, is_continuous)
+
+    def config_delete(self, section, key, persist=False):
+        path = "/".join(["_config", section, key])
+        hdrs = {"X-Couch-Persist": json.dumps(persist)}
+        return self.res.delete(path, headers=hdrs).json()
+
+    def config_get(self, section=None, key=None):
+        if section is None and key is not None:
+            raise ValueError("Unable to get key without a section")
+        parts = ["_config"]
+        if section is not None:
+            parts.append(section)
+        if key is not None:
+            parts.append(key)
+        path = "/".join(parts)
+        return self.res.get(path).json()
+
+    def config_set(self, section, key, value, persist=False):
+        path = "/".join(["_config", section, key])
+        hdrs = {"X-Couch-Persist": json.dumps(persist)}
+        data = json.dumps(value)
+        return self.res.put(path, headers=hdrs, data=data)
+
     def user_create(self, username, password, email, roles=None):
         db = self.db("_users")
         if not db.exists():
@@ -249,19 +290,6 @@ class Server(object):
                 self.res.s.headers.pop("X-Cloudant-User")
             else:
                 self.res.s.headers["X-Cloudant-User"] = orig_user
-
-    def welcome(self):
-        r = self.res.get("")
-        return r.json()
-
-    def active_tasks(self):
-        return self.res.get("_active_tasks").json()
-
-    def all_dbs(self):
-        return self.res.get("_all_dbs").json()
-
-    def db(self, name):
-        return Database(self, name)
 
     def wait_for_indexers(self, dbname=None, design_doc=None,
             min_delay=0.5, delay=0.25, max_delay=30.0):
@@ -599,4 +627,11 @@ def get_server(node=None, interface="private", user="admin"):
 def random_node(interface="private", user="admin"):
     name = random.choice(CONFIG.nodes.keys())
     return get_server(node=name, interface=interface, user=user)
+
+
+def nodes(interface="private", user="admin"):
+    ret = []
+    for name in CONFIG.nodes.keys():
+        ret.append(get_server(node=name, interface=interface, user=user))
+    return ret
 

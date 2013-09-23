@@ -212,6 +212,12 @@ class Server(object):
             raise ValueError("Invalid server URL: %s" % url)
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
+    def set_user(self, username):
+        if username is None and "X-Cloudant-User" in self.res.s.headers:
+            self.res.s.headers.pop("X-Cloudant-User")
+        else:
+            self.res.s.headers["X-Cloudant-User"] = username
+
     def welcome(self):
         r = self.res.get("")
         return r.json()

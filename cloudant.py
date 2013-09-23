@@ -212,11 +212,43 @@ class Server(object):
             raise ValueError("Invalid server URL: %s" % url)
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
-    def set_user(self, username):
-        if username is None and "X-Cloudant-User" in self.res.s.headers:
-            self.res.s.headers.pop("X-Cloudant-User")
-        else:
+    def user_create(self, username, password, email, roles=None):
+        db = self.db("_users")
+        if not db.exists():
+            db.create()
+        user = [
+            ("username", username),
+            ("password", password),
+            ("email", email)
+        ]
+        if roles is not None:
+            for r in roles:
+                if not isinstance(r, basestring):
+                    raise TypeError("'%r' is not a string" % r)
+                user.append(("roles", r))
+        hdrs = {"Content-Type": "application/x-www-form-urlencoded"}
+        return self.res.post("_user", headers=hdrs, data=user)
+
+    def user_exists(self, username):
+        db = self.db("_users")
+        with db.srv.res.return_errors():
+            db.doc_open(username)
+            return 200 <= self.res.last_req.status_code < 300
+
+    @ctx.contextmanager
+    def user_context(self, username, password):
+        orig_auth = self.res.s.auth
+        orig_user = self.res.s.headers.get("X-Cloudant-User")
+        try:
+            self.res.s.auth = (username, password)
             self.res.s.headers["X-Cloudant-User"] = username
+            yield
+        finally:
+            self.res.s.auth = orig_auth
+            if orig_user is None:
+                self.res.s.headers.pop("X-Cloudant-User")
+            else:
+                self.res.s.headers["X-Cloudant-User"] = orig_user
 
     def welcome(self):
         r = self.res.get("")

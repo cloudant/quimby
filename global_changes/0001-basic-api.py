@@ -72,7 +72,7 @@ def test_db_event_types():
 def test_limit():
     srv = cloudant.get_server()
     db = srv.db("global_changes")
-    assert_that(db.info()["doc_count"], greater_than(5))
+    assert_that(db.info()["doc_count"], greater_than_or_equal_to(4))
     c1 = srv.global_changes(limit=2)
     assert_that(c1.results, has_length(2))
     c2 = srv.global_changes(limit=2, since=c1.last_seq)
@@ -192,9 +192,9 @@ def test_continuous():
 
 def test_continuous_limit():
     srv = cloudant.get_server()
-    c = srv.global_changes(feed="continuous", limit=5, timeout=500)
+    c = srv.global_changes(feed="continuous", limit=4, timeout=500)
     assert_that(c, has_property("last_seq"))
-    assert_that(c.results, has_length(5))
+    assert_that(c.results, has_length(4))
     assert_that(c.results, only_contains(has_key("seq")))
 
 

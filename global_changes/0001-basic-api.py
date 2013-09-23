@@ -109,7 +109,7 @@ def test_400_on_bad_paramters():
         for (k, v) in tests:
             if not isinstance(v, basestring):
                 v = json.dumps(v)
-            r = res.get("_db_changes", params={k: v})
+            r = res.get("_db_updates", params={k: v})
             assert_that(r.status_code, is_(400))
 
 
@@ -226,7 +226,7 @@ def continuous_with_update():
 
 def test_continuous_heartbeat():
     srv = cloudant.get_server()
-    r = srv.res.get("_db_changes", stream=True, params={
+    r = srv.res.get("_db_updates", stream=True, params={
         "feed": "continuous",
         "heartbeat": "200"
     })

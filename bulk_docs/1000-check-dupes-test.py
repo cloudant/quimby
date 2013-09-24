@@ -3,6 +3,7 @@ import itertools
 import random
 import uuid
 
+from nose.plugins.skip import SkipTest
 from hamcrest import *
 from hamcrest.library.text.stringmatches import matches_regexp
 
@@ -14,6 +15,7 @@ NUM_LOCAL_TEST_CASES = 100
 
 
 def test_clustered_bulk_doc_dupes():
+    raise SkipTest("Disabled until we bump our fabric version")
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
     db.reset()

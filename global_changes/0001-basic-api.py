@@ -116,14 +116,16 @@ def test_400_on_bad_paramters():
 def test_descending():
     srv = cloudant.get_server()
     db = srv.db("global_changes")
-    assert_that(db.info()["doc_count"], greater_than(5))
+    assert_that(db.info()["doc_count"], greater_than_or_equal_to(4))
     c = srv.global_changes(limit=5, descending=True)
-    start = c.results[0]["seq"].split("-", 1)[0]
+    def int_seq(res):
+        return int(res["seq"].split("-", 1)[0])
+    start = int_seq(c.results[0])
     # There's a bug in the underlying changes behavior that does weird
     # things to the since sequence on descending requests. We should
     # figure that out at somepoint.
     for row in c.results[1:]:
-        assert_that(row["seq"].split("-", 1)[0], less_than_or_equal_to(start))
+        assert_that(int_seq(row), less_than_or_equal_to(start))
 
 
 def test_long_poll():

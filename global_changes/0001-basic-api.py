@@ -40,13 +40,13 @@ def test_db_event_types():
     db.create(q=1)
     c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
     assert_that(c.results,
-            has_item(has_entries({"name": dbname, "type": "created"})))
+            has_item(has_entries({"dbname": dbname, "type": "created"})))
     seq = c.last_seq
 
     db.doc_save({"foo":"bar"})
     c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
     assert_that(c.results,
-            has_item(has_entries({"name": dbname, "type": "updated"})))
+            has_item(has_entries({"dbname": dbname, "type": "updated"})))
 
     seq = c.last_seq
 
@@ -56,7 +56,7 @@ def test_db_event_types():
         db.doc_save({"ohai": random.randint(0, 500)})
     c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=50)
     expect = {
-        "name": dbname,
+        "dbname": dbname,
         "type": "updated",
         "seq": is_not(seq)
     }
@@ -66,7 +66,7 @@ def test_db_event_types():
     db.delete()
     c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
     assert_that(c.results,
-            has_item(has_entries({"name": dbname, "type": "deleted"})))
+            has_item(has_entries({"dbname": dbname, "type": "deleted"})))
 
 
 def test_limit():
@@ -182,7 +182,7 @@ def long_poll_with_update():
     newdoc = f.result()
     assert_that(newdoc, has_entries({"_id": anything(), "_rev": anything()}))
 
-    assert_that(c.entries, has_item(has_entry("name", db.name)))
+    assert_that(c.entries, has_item(has_entry("dbname", db.name)))
 
 
 def test_continuous():
@@ -223,7 +223,7 @@ def continuous_with_update():
     assert_that(newdoc, has_entries({"_id": anything(), "_rev": anything()}))
 
     assert_that(after - before, greater_than(2))
-    assert_that(c.results, has_item(has_entry("name", db.name)))
+    assert_that(c.results, has_item(has_entry("dbname", db.name)))
 
 
 def test_continuous_heartbeat():
@@ -240,7 +240,7 @@ def test_continuous_heartbeat():
             if heart_beats >= 3:
                 break
         else:
-            assert_that(json.loads(line), has_key("name"))
+            assert_that(json.loads(line), has_key("dbname"))
             changes_read += 1
     assert_that(changes_read, greater_than(0))
     assert_that(heart_beats, is_(3))

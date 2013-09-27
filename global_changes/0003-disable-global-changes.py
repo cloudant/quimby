@@ -24,7 +24,7 @@ def test_disable_global_changes():
     seq = srv.global_changes(feed="longpoll", since=seq, timeout=5000).last_seq
     db.doc_save({})
     c = srv.global_changes(feed="longpoll", since=seq, timeout=5000)
-    assert_that(c.results, has_item(has_entry("name", db.name)))
+    assert_that(c.results, has_item(has_entry("dbname", db.name)))
     seq = c.last_seq
 
     # Disable global_changes

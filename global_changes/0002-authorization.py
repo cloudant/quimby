@@ -37,6 +37,6 @@ def test_scoped_to_user():
         with srv.user_context(user, user):
             dbname = "db_%s" % user
             c = srv.global_changes()
-            assert_that(c.results, only_contains(has_entry("name", dbname)))
+            assert_that(c.results, only_contains(has_entry("dbname", dbname)))
 
 

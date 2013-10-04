@@ -298,7 +298,7 @@ class Server(object):
         def _match(t):
             if t.get("type") != "indexer":
                 return False
-            if _parse_dbname(t.get("database", "")) != dbname:
+            if parse_shard_name(t.get("database", "")) != dbname:
                 return False
             if design_doc is not None:
                 if t.get("design_document") != design_doc:

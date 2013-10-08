@@ -1,4 +1,6 @@
 
+import time
+
 from hamcrest import *
 
 import cloudant
@@ -20,6 +22,7 @@ def setup():
         with srv.user_context(user, user):
             db = srv.db("db_%s" % user)
             db.reset(q=1)
+    time.sleep(0.5)
 
 
 def test_admin_sees_all():

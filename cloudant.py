@@ -312,6 +312,14 @@ class Server(object):
                 raise RuntimError("Timeout waiting for indexer tasks")
             time.sleep(1.0)
 
+    def _params(self, kwargs):
+        ret = {}
+        for k, v in kwargs.items():
+            if not isinstance(v, basestring):
+                v = json.dumps(v)
+            ret[k] = v
+        return ret
+
 
 class Database(object):
     def __init__(self, server, name):

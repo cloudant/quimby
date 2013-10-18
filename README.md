@@ -6,22 +6,14 @@ Yep.
 Running
 -------
 
-Until we get dbcore/#158 merged this is a bit manual but totally doable. If
-you clone this repo somewhere all you need to do is this:
+All you need to do is get dbcore running with a quimby's required credentials:
 
-    $ # In your dbcore repo
-    $ # edit rel/overlay/etc/local.ini to look like this:
-    $ cat rel/overlay/etc/local.ini
-    ; local customizations are stored here
-    [admins]
-    adm = pass
-    $ # and then...
-    $ ./dev/run
+    $ dev/run --admin=adm:pass
 
-Once you have DB Core running and requiring the adm account then all you
-need to do in this repository is run:
+Once this has completed startup you can simply invoke the run script in the
+quimby repository root:
 
-    $ ./run
+    $ $QUIMBY_ROOT/run [optionally pass subsections to run]
 
 And you should get test output. If you don't have to wait for the virtual
 environment to be created then you probably need to install virtualenv.
@@ -30,6 +22,5 @@ environment to be created then you probably need to install virtualenv.
 ToDo
 ----
 
-I need to rearrange tests sot hat they're more better organized
-and so that everythign is under the quimby namespace except cloudant.py
-which I may end up breaking out into a separate project.
+* reorganize test directories and names
+* use the quimby namespace for tests

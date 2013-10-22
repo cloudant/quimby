@@ -11,6 +11,8 @@ import struct
 import time
 import urllib
 import urlparse
+import StringIO
+import gzip as gziplib
 
 
 import requests
@@ -33,6 +35,14 @@ def dbcopy_docid(key):
     md5sum = hashlib.md5(external).digest()
     b64 = base64.b64encode(md5sum).rstrip("=")
     return b64.replace("/", "_").replace("+", "-")
+
+
+def gzip(string):
+    out = StringIO.StringIO()
+    f = gziplib.GzipFile(fileobj=out, mode='wb')
+    f.write(string)
+    f.close()
+    return out.getvalue()
 
 
 def quote(str):

@@ -188,3 +188,20 @@ def test_changes_continuous_with_heartbeat_and_since():
     assert_that(changes_read, is_(0))
     assert_that(heart_beats, is_(3))
     r.close()
+
+
+def test_changes_with_seq_interval():
+    db = streaming.util.create_streaming_db()
+    seq_interval = 3
+    changes_read = 0
+    c = db.changes(seq_interval=seq_interval)
+    for row in c.results:
+        changes_read += 1
+        if changes_read % seq_interval == 2:
+            assert_that(row.get("seq"), is_not(None))
+        else:
+            assert_that(row, has_entry("seq", None))
+
+    assert_that(c, has_property("last_seq"))
+    assert_that(c.results, has_length(streaming.util.NUM_DOCS))
+    assert_that(c.results, only_contains(has_key("seq")))

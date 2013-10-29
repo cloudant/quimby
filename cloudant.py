@@ -25,6 +25,7 @@ requests_log.setLevel(logging.WARNING)
 
 DBNAME_PAT = r"shards/[a-fA-F0-9]{8}-[a-fA-F0-9]{8}/([^.]+)"
 DBNAME_RE = re.compile(DBNAME_PAT)
+HAPROXY_PORT = os.environ.get("HAPROXY_PORT", "5984")
 
 
 def dbcopy_docid(key):
@@ -63,7 +64,7 @@ class EnvironmentConfig(object):
         "TESTY_CLUSTER": None,
         "TESTY_CLUSTER_LB": None,
         "TESTY_CLUSTER_NODENAMES": None,
-        "TESTY_CLUSTER_NETLOC": "127.0.0.1:5984",
+        "TESTY_CLUSTER_NETLOC": "127.0.0.1:{0}".format(HAPROXY_PORT),
         "TESTY_NODE_NAMES": ",".join([
             "node1@127.0.0.1",
             "node2@127.0.0.1",

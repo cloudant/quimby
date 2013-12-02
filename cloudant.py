@@ -202,6 +202,9 @@ class Resource(object):
     def delete(self, path, **kwargs):
         return self._req("delete", path, kwargs)
 
+    def options(self, path, **kwargs):
+        return self._req("options", path, kwargs)
+
     def _req(self, method, path, kwargs):
         url = self._url(path)
         self.last_req = getattr(self.s, method)(url, **kwargs)
@@ -264,6 +267,30 @@ class Server(object):
         data = json.dumps(value)
         return self.res.put(path, headers=hdrs, data=data)
 
+    def user_config_get(self, username):
+        db = self.db("_users")
+        if not db.exists():
+            db.create()
+        with db.srv.res.return_errors():
+            user = db.doc_open(username)
+            return user.get('config', {})
+
+    def user_config_set(self, username, config):
+        db = self.db("_users")
+        if not db.exists():
+            db.create()
+        with db.srv.res.return_errors():
+            user = db.doc_open(username)
+            if config == user.get('config', {}):
+                return True
+            else:
+                user['config'] = config
+                resp = self.res.put(
+                    "_users/{0}".format(username),
+                    data=json.dumps(user)
+                )
+                return 200 <= self.res.last_req.status_code < 300
+
     def user_create(self, username, password, email, roles=None):
         db = self.db("_users")
         if not db.exists():
@@ -288,12 +315,13 @@ class Server(object):
             return 200 <= self.res.last_req.status_code < 300
 
     @ctx.contextmanager
-    def user_context(self, username, password):
+    def user_context(self, username, password, owner=None):
+        x_cloudant_user = owner or username
         orig_auth = self.res.s.auth
         orig_user = self.res.s.headers.get("X-Cloudant-User")
         try:
             self.res.s.auth = (username, password)
-            self.res.s.headers["X-Cloudant-User"] = username
+            self.res.s.headers["X-Cloudant-User"] = x_cloudant_user
             yield
         finally:
             self.res.s.auth = orig_auth
@@ -322,6 +350,12 @@ class Server(object):
             if time.time() - start > max_delay:
                 raise RuntimError("Timeout waiting for indexer tasks")
             time.sleep(1.0)
+
+    def last_status_code(self):
+        return self.res.last_req.status_code
+
+    def last_headers(self):
+        return self.res.last_req.headers
 
     def _params(self, kwargs):
         ret = {}
@@ -467,6 +501,24 @@ class Database(object):
         if not len(c.results):
             raise RuntimeError("No change")
         return c.last_seq
+
+    def last_status_code(self):
+        return self.srv.last_status_code()
+
+    def last_headers(self):
+        return self.srv.last_headers()
+
+    def get_security(self):
+        return self.srv.res.get(self.path("_security")).json()
+
+    def set_security(self, props):
+        curr = self.get_security()
+        if curr != props:
+            with self.srv.res.return_errors() as res:
+                res.put(self.path("_security"), data=json.dumps(props))
+                return True
+        else:
+            return True
 
     def _exec_view(self, path, **kwargs):
         data = None
@@ -635,12 +687,14 @@ class ViewIterator(object):
                 self._rows.append(row)
 
 
-def get_server(node=None, interface="private", user="admin"):
+def get_server(node=None, interface="private", user="admin", auth=None):
+    if auth is None:
+        auth = CONFIG.get_user(user)
     if node is None:
         url = CONFIG.cluster_url
     else:
         url = "".join((CONFIG.protocol, "://", CONFIG.nodes[node][interface]))
-    return Server(url, auth=CONFIG.get_user(user))
+    return Server(url, auth=auth)
 
 
 def random_node(interface="private", user="admin"):

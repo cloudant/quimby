@@ -208,3 +208,73 @@ def test_no_cors():
             srv.res.get(db_path+"/_all_docs", headers={"Origin":origin}).json(),
             has_key("rows")
         )
+
+# COUCHDB-1689
+def test_attachments():
+    srv = cloudant.get_server(auth=(USER, USER))
+    origin = "http://example.com"
+    db_path = "/" + SHARED_DB
+    text_doc_url = db_path + "/text_attachment_test"
+    bin_doc_url = db_path + "/bin_attachment_test"
+    allowed_methods = "GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT, COPY, OPTIONS"
+    with srv.user_context(USER, USER, owner=OWNER):
+        text_put_resp = srv.res.put(
+            text_doc_url+"/attachment.txt",
+            headers={"Origin": origin, "Content-Type": "text/plain"},
+            data="this is a text attachment"
+        )
+        assert_that(
+            text_put_resp.status_code,
+            is_(201)
+        )
+        assert_that(
+            text_put_resp,
+            has_header("Access-Control-Allow-Origin")
+        )
+        text_get_resp = srv.res.get(
+            text_doc_url+"?attachments=true",
+            headers={"Origin": origin}
+        )
+        assert_that(
+            text_get_resp.status_code,
+            is_(200)
+        )
+        assert_that(
+            text_get_resp,
+            has_header("Access-Control-Allow-Origin")
+        )
+        bin_put_resp = srv.res.put(
+            bin_doc_url+"/attachment.bin",
+            headers={
+                "Origin": origin,
+                "Content-Type": "application/octet-stream"
+            },
+            data="this is a binary attachment"
+        )
+        assert_that(
+            bin_put_resp.status_code,
+            is_(201)
+        )
+        assert_that(
+            bin_put_resp,
+            has_header("Access-Control-Allow-Origin")
+        )
+        bin_get_resp = srv.res.get(
+            bin_doc_url+"/attachment.bin",
+            headers={
+                "Origin": origin,
+                "Range": "bytes=0-6"
+            }
+        )
+        assert_that(
+            bin_get_resp.status_code,
+            is_(206)
+        )
+        assert_that(
+            bin_get_resp,
+            has_header("Access-Control-Allow-Origin")
+        )
+        assert_that(
+            bin_get_resp.content,
+            is_("this is")
+        )

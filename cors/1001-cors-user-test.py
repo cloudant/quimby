@@ -216,7 +216,6 @@ def test_attachments():
     db_path = "/" + SHARED_DB
     text_doc_url = db_path + "/text_attachment_test"
     bin_doc_url = db_path + "/bin_attachment_test"
-    allowed_methods = "GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT, COPY, OPTIONS"
     with srv.user_context(USER, USER, owner=OWNER):
         text_put_resp = srv.res.put(
             text_doc_url+"/attachment.txt",
@@ -278,3 +277,23 @@ def test_attachments():
             bin_get_resp.content,
             is_("this is")
         )
+
+def test_if_none_match_header():
+    srv = cloudant.get_server(auth=(USER, USER))
+    origin = "http://example.com"
+    db_path = "/" + SHARED_DB
+    doc_url = db_path + "/test_if_none_match"
+    with srv.user_context(USER, USER, owner=OWNER):
+        doc_put_resp = srv.res.put(
+            doc_url,
+            data="{}",
+            headers={"Origin": origin}
+        )
+        assert_that(doc_put_resp.status_code, is_(201))
+        etag = doc_put_resp.headers["ETag"]
+        assert_that(
+            srv.res.get(
+                doc_url,
+                headers={"Origin": origin, "If-None-Match": etag}
+            ).status_code,
+            is_(304))

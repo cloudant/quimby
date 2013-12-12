@@ -1,4 +1,6 @@
 
+import time
+
 from hamcrest import *
 
 import cloudant
@@ -31,6 +33,9 @@ def setup_module():
     for i in range(NUM_ROWS):
         docs.append({"value":i})
     db.bulk_docs(docs)
+    # Wait for internal replication to avoid
+    # the race.
+    time.sleep(2)
 
 
 def test_basic():

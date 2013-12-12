@@ -1,5 +1,7 @@
 
 import time
+import random
+import sys
 
 from hamcrest import *
 
@@ -43,3 +45,30 @@ def test_scoped_to_user():
             assert_that(c.results, only_contains(has_entry("dbname", dbname)))
 
 
+def test_limit_as_admin_and_non_admin():
+    srv = cloudant.get_server()
+
+    for _ in xrange(2):
+        for user in USERS:
+            with srv.user_context(user, user):
+                dbname = "test_suite_db_global_changes_%d" % random.randint(0, sys.maxint)
+                db = srv.db(dbname)
+
+                db.create(q=1)
+                db.doc_save({"foo":"bar"})
+
+                db.delete()
+
+    c = srv.global_changes(limit=5, timeout=500)
+    assert_that(c.results, has_length(5))
+
+    c = srv.global_changes(limit=0, timeout=500)
+    assert_that(c.results, has_length(0))
+
+    for user in USERS:
+        with srv.user_context(user, user):
+            c = srv.global_changes(limit=5, timeout=500)
+            assert_that(c.results, has_length(5))
+
+            c = srv.global_changes(limit=0, timeout=500)
+            assert_that(c.results, has_length(0))

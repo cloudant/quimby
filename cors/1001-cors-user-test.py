@@ -41,7 +41,7 @@ SECURITY_DOC = {
     }
 }
 
-EXPECTED_HEADERS = "Content-Type, Accept-Ranges, Etag, Server, X-Couch-Request-ID"
+EXPECTED_HEADERS = "Content-Type, Accept-Ranges, Etag, Server, X-Couch-Request-ID, X-Couch-Update-NewRev"
 
 def setup_module():
     srv = cloudant.get_server()
@@ -59,13 +59,16 @@ def test_cors():
     srv = cloudant.get_server(auth=(USER, USER))
     origin = "http://example.com"
     db_path = "/" + SHARED_DB
-    allowed_methods = "GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT, COPY, OPTIONS"
+    allowed_methods = "CONNECT, COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT, TRACE"
     with srv.user_context(USER, USER, owner=OWNER):
         assert_that(
             calling(srv.res.options).with_args(""),
             raises(HTTPError)
         )
-        db_options_resp = srv.res.options("", headers={"Origin": origin})
+        db_options_resp = srv.res.options("", headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET"
+        })
         assert_that(
             db_options_resp,
             has_header("Access-Control-Allow-Origin", val=origin)
@@ -119,7 +122,10 @@ def test_minimal_cors():
             calling(srv.res.options).with_args(""),
             raises(HTTPError)
         )
-        db_options_resp = srv.res.options("", headers={"Origin": origin})
+        db_options_resp = srv.res.options("", headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST"
+        })
         assert_that(
             db_options_resp,
             has_header("Access-Control-Allow-Origin", val=origin)

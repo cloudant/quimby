@@ -41,7 +41,7 @@ SECURITY_DOC = {
     }
 }
 
-EXPECTED_HEADERS = "Content-Type, Accept-Ranges, Etag, Server, X-Couch-Request-ID, X-Couch-Update-NewRev"
+EXPECTED_HEADERS = "content-type, accept-ranges, etag, server, x-couch-request-id, x-couch-update-newrev"
 
 def setup_module():
     srv = cloudant.get_server()

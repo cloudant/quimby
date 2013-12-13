@@ -6,10 +6,15 @@ from hamcrest import *
 
 import cloudant
 
+def setup():
+    srv = cloudant.get_server()
+    db = srv.db("test_suite_db")
+    db.reset(q=1)
+
+
 def _do_bulk_request(data, headers):
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
-    db.reset()
     try:
         resp = db.srv.res.post(db.path("_bulk_docs"), headers=headers, data=data)
     except Exception as http_err:

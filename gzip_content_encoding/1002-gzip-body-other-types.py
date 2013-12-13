@@ -9,7 +9,7 @@ import cloudant
 def test_gzipped_body_jpeg_content_type():
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
-    db.reset()
+    db.reset(q=1)
     docid = str(uuid.uuid4())
     doc = {'id': docid}
     db.doc_save(doc)

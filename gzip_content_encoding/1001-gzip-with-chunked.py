@@ -14,7 +14,7 @@ def _chunked_resp(string, chunk_size):
 def test_gzipped_body_chunked_upload():
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
-    db.reset()
+    db.reset(q=1)
     docs = [{'id': str(uuid.uuid4())} for _ in xrange(30)]
     data = cloudant.gzip(json.dumps({'docs': docs}))
     headers = {"Content-Encoding": "gzip", "Content-Type": "application/json"}

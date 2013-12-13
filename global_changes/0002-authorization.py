@@ -9,6 +9,7 @@ import cloudant
 
 
 USERS = ["user_a", "user_b", "user_c"]
+LIMITS = ["user_limit_a", "user_limit_b"]
 
 def setup():
     srv = cloudant.get_server()
@@ -18,7 +19,7 @@ def setup():
     db = srv.db("test_suite_db_global_changes")
     if not db.exists():
         db.create()
-    for user in USERS:
+    for user in USERS + LIMITS:
         if not srv.user_exists(user):
             srv.user_create(user, user, "foo@bar.com")
         with srv.user_context(user, user):
@@ -49,9 +50,10 @@ def test_limit_as_admin_and_non_admin():
     srv = cloudant.get_server()
 
     for _ in xrange(2):
-        for user in USERS:
+        for user in LIMITS:
             with srv.user_context(user, user):
-                dbname = "test_suite_db_global_changes_%d" % random.randint(0, sys.maxint)
+                dbid = random.randint(0, sys.maxint)
+                dbname = "test_suite_db_global_changes_%d" % dbid
                 db = srv.db(dbname)
 
                 db.create(q=1)
@@ -65,7 +67,7 @@ def test_limit_as_admin_and_non_admin():
     c = srv.global_changes(limit=0, timeout=500)
     assert_that(c.results, has_length(0))
 
-    for user in USERS:
+    for user in LIMITS:
         with srv.user_context(user, user):
             c = srv.global_changes(limit=5, timeout=500)
             assert_that(c.results, has_length(5))

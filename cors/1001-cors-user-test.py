@@ -45,15 +45,15 @@ EXPECTED_HEADERS = "content-type, accept-ranges, etag, server, x-couch-request-i
 
 def setup_module():
     srv = cloudant.get_server()
-    with srv.user_context(OWNER, OWNER):
-        db = srv.db(SHARED_DB)
-        db.reset()
-        db.set_security(SECURITY_DOC)
     for user in USERS:
         if not srv.user_exists(user):
             srv.user_create(user, user, "foo@bar.com")
         if user in CORS_CONFIG:
             assert(srv.user_config_set(user, CORS_CONFIG[user]))
+    with srv.user_context(OWNER, OWNER):
+        db = srv.db(SHARED_DB)
+        db.reset()
+        db.set_security(SECURITY_DOC)
 
 def test_cors():
     srv = cloudant.get_server(auth=(USER, USER))

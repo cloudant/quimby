@@ -10,6 +10,7 @@ import cloudant
 
 USERS = ["user_a", "user_b", "user_c"]
 LIMITS = ["user_limit_a", "user_limit_b"]
+UNAUTHED = ["unauth_user_a", "unauth_user_b", "unauth_user_c"]
 
 def setup():
     srv = cloudant.get_server()
@@ -20,6 +21,12 @@ def setup():
     if not db.exists():
         db.create()
     for user in USERS + LIMITS:
+        if not srv.user_exists(user):
+            srv.user_create(user, user, "foo@bar.com", roles=['_db_updates'])
+        with srv.user_context(user, user):
+            db = srv.db("db_%s" % user)
+            db.reset(q=1)
+    for user in UNAUTHED:
         if not srv.user_exists(user):
             srv.user_create(user, user, "foo@bar.com")
         with srv.user_context(user, user):
@@ -46,6 +53,18 @@ def test_unauthorized_sees_nothing():
             assert_that(e.response.status_code, is_(401))
         else:
             assert_that(True, is_(False))
+
+
+def test_bad_role_sees_nothing():
+    srv = cloudant.get_server()
+    for user in UNAUTHED:
+        with srv.user_context(user, user):
+            try:
+                c = srv.global_changes()
+            except Exception as e:
+                assert_that(e.response.status_code, is_(403))
+            else:
+                assert_that(True, is_(False))
 
 
 def test_scoped_to_user():

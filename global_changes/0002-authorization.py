@@ -37,6 +37,17 @@ def test_admin_sees_all():
     assert_that(c.results, has_item(has_entry("account", "user_c")))
 
 
+def test_unauthorized_sees_nothing():
+    for user in USERS:
+        srv = cloudant.get_server(user=user, auth=())
+        try:
+            c = srv.global_changes()
+        except Exception as e:
+            assert_that(e.response.status_code, is_(401))
+        else:
+            assert_that(True, is_(False))
+
+
 def test_scoped_to_user():
     srv = cloudant.get_server()
     for user in USERS:

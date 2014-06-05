@@ -350,7 +350,7 @@ class Server(object):
             time.sleep(min_delay)
         while any(_match(t) for t in self.active_tasks()):
             if time.time() - start > max_delay:
-                raise RuntimError("Timeout waiting for indexer tasks")
+                raise RuntimeError("Timeout waiting for indexer tasks")
             time.sleep(1.0)
 
     def last_status_code(self):

@@ -13,7 +13,8 @@ import urllib
 import urlparse
 import StringIO
 import gzip as gziplib
-
+import functools
+import nose
 
 import requests
 from hamcrest.core.base_matcher import BaseMatcher
@@ -708,6 +709,26 @@ def nodes(interface="private", user="admin"):
     for name in CONFIG.nodes.keys():
         ret.append(get_server(node=name, interface=interface, user=user))
     return ret
+
+
+# Custom decorator for skipping tests run by Nose
+
+@nose.tools.nottest
+def skip_test(func=None, reason='BROKEN TEST'):
+    """
+    Decorator for skipping tests with a user-definable reason.
+    Example usage:
+        @skip_test(reason="SOME REASON")
+        def test_function_to_be_skipped()
+    """
+    if func is None:
+        return functools.partial(skip_test, reason=reason)
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwds):
+        raise nose.SkipTest(reason)
+        return func(*args, **kwds)
+    return wrapper
 
 
 # Hamcrest helpers

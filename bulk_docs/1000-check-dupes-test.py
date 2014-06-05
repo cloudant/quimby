@@ -13,16 +13,17 @@ NUM_CLUSTER_TEST_CASES = 25
 NUM_LOCAL_TEST_CASES = 100
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_clustered_bulk_doc_dupes():
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_clustered_bulk_doc_dupes")
     db.reset()
     run_ordering_check(db, NUM_CLUSTER_TEST_CASES)
 
 
 def test_backdoor_bulk_doc_dupes():
     srv = cloudant.random_node()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_backdoor_bulk_doc_dupes")
     db.reset()
     run_ordering_check(db, NUM_LOCAL_TEST_CASES)
 

@@ -30,10 +30,12 @@ def setup_module():
     db.bulk_docs(docs)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_map_views():
     run_view(False)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_reduce_view():
     run_view(True);
 

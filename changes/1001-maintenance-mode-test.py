@@ -27,7 +27,7 @@ SINCE_SEQ_2 = "".join("""
 
 def setup_module():
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_maint_mode_test")
     db.reset(q=4)
     docs = []
     for i in range(NUM_ROWS):
@@ -73,7 +73,7 @@ def run_changes(num_results, **kwargs):
     # map so that we can remove non-shard-containing nodes from
     # service first.
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_maint_mode_test")
     nodes = cloudant.nodes(interface="public")
     try:
         for n in nodes[:-1]:

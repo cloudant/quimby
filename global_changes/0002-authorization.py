@@ -55,6 +55,7 @@ def test_unauthorized_sees_nothing():
             assert_that(True, is_(False))
 
 
+@cloudant.skip_test(reason="BROKEN TEST - FB 31024")
 def test_bad_role_sees_nothing():
     srv = cloudant.get_server()
     for user in UNAUTHED:

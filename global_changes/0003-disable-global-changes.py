@@ -11,6 +11,7 @@ def setup():
         db.create()
 
 
+@cloudant.skip_test(reason="BROKEN TEST - FB 31024")
 def test_disable_global_changes():
     srv = cloudant.get_server()
     db = srv.db("test_suite_db_global_changes")

@@ -19,7 +19,7 @@ SINCE_SEQ = "".join("""\
 
 def setup_module():
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_node_repl_test")
     db.reset(q=4)
     docs = []
     for i in range(NUM_ROWS):
@@ -33,7 +33,7 @@ def test_basic_node_replacement():
     # First run the changes on node1 so we get the
     # last update seq.
     node1 = cloudant.get_server(node="node1@127.0.0.1", interface="public")
-    db = node1.db("test_suite_db")
+    db = node1.db("test_suite_db_node_repl_test")
     c = db.changes(since=SINCE_SEQ)
     assert_that(c.results, has_length(NUM_ROWS))
     last_seq = c.last_seq
@@ -44,7 +44,7 @@ def test_basic_node_replacement():
     try:
         node1.config_set("cloudant", "maintenance_mode", "true")
         node3 = cloudant.get_server(node="node3@127.0.0.1", interface="public")
-        db = node3.db("test_suite_db")
+        db = node3.db("test_suite_db_node_repl_test")
         c = db.changes(since=last_seq)
         assert_that(c.results, has_length(0))
     finally:

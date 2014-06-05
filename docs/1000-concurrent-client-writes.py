@@ -12,6 +12,7 @@ TEST_TIME = 5
 NUM_CLIENTS = 20
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_multiple_clients():
     # Here we're testing multiple clients attempting to update
     # a single document and racing to get their update in. To
@@ -29,7 +30,7 @@ def test_multiple_clients():
     # Although we can check for the absence of errors which will
     # have to do for now.
     srv = cloudant.random_node()
-    db = srv.db("test_suite_db")
+    db = srv.db("test_suite_db_concurrent_client_writes")
     db.reset()
 
     docid = "test_doc"

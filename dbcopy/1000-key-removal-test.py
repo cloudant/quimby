@@ -12,16 +12,17 @@ DDOC = {
         "bam": {
             "map": "function(doc) {emit(null, 1);}",
             "reduce": "_sum",
-            "dbcopy": "test_suite_db_copy"
+            "dbcopy": "test_suite_db_key_removal_test_dbcopy"
         }
     }
 }
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_removal():
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
-    dbcopy = srv.db("test_suite_db_copy")
+    db = srv.db("test_suite_db_key_removal_test")
+    dbcopy = srv.db("test_suite_db_key_removal_test_dbcopy")
 
     db.reset()
     dbcopy.reset()

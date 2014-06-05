@@ -55,6 +55,7 @@ def setup_module():
         db.reset()
         db.set_security(SECURITY_DOC)
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_cors():
     srv = cloudant.get_server(auth=(USER, USER))
     origin = "http://example.com"
@@ -112,6 +113,7 @@ def test_cors():
             has_key("rows")
         )
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_minimal_cors():
     srv = cloudant.get_server(auth=(USER, USER))
     origin = "http://baz.com"
@@ -171,6 +173,7 @@ def test_minimal_cors():
             has_key("rows")
         )
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_no_cors():
     srv = cloudant.get_server(auth=(USER, USER))
     origin = "http://random-no-cors-domain.com"

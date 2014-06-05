@@ -6,6 +6,7 @@ from hamcrest import *
 
 import cloudant
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_gzipped_body_jpeg_content_type():
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")

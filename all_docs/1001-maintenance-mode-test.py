@@ -17,6 +17,7 @@ def setup_module():
     db.bulk_docs(docs)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_all_docs():
     # Check that we can run with maintenance mode on a number
     # of servers. This has an assumption that the last node in

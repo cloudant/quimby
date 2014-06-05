@@ -26,6 +26,7 @@ def test_no_options():
     assert_that(c, has_property("last_seq"))
 
 
+@cloudant.skip_test(reason="BROKEN TEST - FB 31024")
 def test_db_event_types():
     # I'm mashing each of these tests together because cycling
     # through dbs is a good way to get the dbcore nodes to hit
@@ -69,6 +70,7 @@ def test_db_event_types():
             has_item(has_entries({"dbname": dbname, "type": "deleted"})))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")  # https://gist.github.com/robfraz/3283ce59177bc561e57c
 def test_limit():
     srv = cloudant.get_server()
     db = srv.db("global_changes")
@@ -80,6 +82,7 @@ def test_limit():
         assert_that(c1.results, is_not(has_item(row)))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")  # https://gist.github.com/robfraz/3283ce59177bc561e57c
 def test_parameters_are_ignored():
     srv = cloudant.get_server()
     c = srv.global_changes(limit=1, foo="bar")
@@ -113,6 +116,7 @@ def test_400_on_bad_paramters():
             assert_that(r.status_code, is_(400))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")  # https://gist.github.com/robfraz/3283ce59177bc561e57c
 def test_descending():
     srv = cloudant.get_server()
     db = srv.db("global_changes")
@@ -135,6 +139,7 @@ def test_long_poll():
     assert_that(c.results, only_contains(has_key("seq")))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")  # https://gist.github.com/robfraz/3283ce59177bc561e57c
 def test_long_poll_limit():
     srv = cloudant.get_server()
     c = srv.global_changes(feed="longpoll", limit=3)
@@ -143,6 +148,7 @@ def test_long_poll_limit():
     assert_that(c.results, only_contains(has_key("seq")))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_long_poll_timeout():
     srv = cloudant.get_server()
     seq = srv.global_changes().last_seq
@@ -192,6 +198,7 @@ def test_continuous():
     assert_that(c.results, only_contains(has_key("seq")))
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_continuous_limit():
     srv = cloudant.get_server()
     c = srv.global_changes(feed="continuous", limit=4, timeout=500)

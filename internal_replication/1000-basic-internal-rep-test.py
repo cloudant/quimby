@@ -24,6 +24,7 @@ def mk_docid(src_val, tgt_val):
     return "_local/shard-sync-{0}-{1}".format(n1, n2)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_basic_internal_replication():
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")

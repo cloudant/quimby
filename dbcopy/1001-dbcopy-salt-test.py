@@ -10,16 +10,17 @@ DDOC = {
         "bar": {
             "map": "function(doc) {emit(doc._id, 1);}",
             "reduce": "_sum",
-            "dbcopy": "test_suite_db_copy"
+            "dbcopy": "test_suite_salt_test_dbcopy"
         }
     }
 }
 
 
+@cloudant.skip_test(reason="BROKEN TEST - FB 31024")
 def test_doc_salt():
     srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
-    dbcopy = srv.db("test_suite_db_copy")
+    db = srv.db("test_suite_db_salt_test")
+    dbcopy = srv.db("test_suite_salt_test_dbcopy")
 
     db.reset()
     dbcopy.reset()

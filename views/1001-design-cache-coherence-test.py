@@ -36,18 +36,21 @@ def setup_module():
     DB.bulk_docs(docs)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_ddoc_one():
     design = save_design(ddoc_one)
     check_one()
     delete_design(design)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_ddoc_two():
     design = save_design(ddoc_two)
     check_two()
     delete_design(design)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_successive_updates():
     design = save_design(ddoc_one)
     design = save_design(ddoc_two, design)
@@ -58,6 +61,7 @@ def test_successive_updates():
     delete_design(design)
 
 
+@cloudant.skip_test(reason="FLAKY TEST - FB 31024")
 def test_coherent_validation_funs():
     DB.doc_save({"_id": "s", "key": "x", "val": 0, "reject_me": True})
     design = save_design(ddoc_one)

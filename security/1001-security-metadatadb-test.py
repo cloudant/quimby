@@ -4,6 +4,7 @@ from requests.exceptions import HTTPError
 
 import copy
 import json
+import time
 
 import cloudant
 
@@ -22,6 +23,26 @@ SEC_DOC = {
     }
 }
 
+ROLES_LIST = [
+    ["_reader"],
+    ["_writer"],
+    ["_admin"],
+    ["_reader", "_writer"],
+    ["_reader", "_writer", "_admin"]
+]
+
+
+def disable_cassim(srv):
+    cdb = srv.db(CASSIM_DB)
+    with cdb.srv.res.return_errors():
+        cdb.delete()
+
+
+def enable_cassim():
+    srv = cloudant.get_server()
+    cdb = srv.db(CASSIM_DB)
+    cdb.reset()
+
 
 def setup_module():
     srv = cloudant.get_server()
@@ -30,9 +51,7 @@ def setup_module():
         if not srv.user_exists(user):
             srv.user_create(user, user, "foo@bar.com")
 
-    cdb = srv.db(CASSIM_DB)
-    with cdb.srv.res.return_errors():
-        cdb.delete()
+    disable_cassim(srv)
 
     with srv.user_context(OWNER, OWNER):
         db = srv.db(SHARED_DB)
@@ -76,6 +95,26 @@ def assert_user_roles(srv, user, roles):
         check_roles(srv, roles)
 
 
+def assert_cassim_roles(srv, roles):
+    suffix = current_db_suffix()
+    url = "/cassim/{0}%2f{1}%2f_security{2}".format(OWNER, SHARED_DB, suffix)
+    srv2 = cloudant.get_server()
+    resp = srv2.res.get(url).json()
+    bar_roles = resp["cloudant"].get("bar", [])
+    assert(bar_roles == roles)
+
+
+def current_db_suffix():
+    srvp = cloudant.get_server(node="node1@127.0.0.1")
+    url = "/dbs/{0}%2f{1}".format(OWNER, SHARED_DB)
+    resp = srvp.res.get(url).json()
+    return suffix_to_string(resp["shard_suffix"])
+
+
+def suffix_to_string(suffix):
+    return ''.join(map(chr, suffix))
+
+
 # roles = []
 def test_basic_security():
     srv = cloudant.get_server(auth=(USER,USER))
@@ -110,3 +149,18 @@ def test_reader_writer_admin_shared_security():
 def test_admin_shared_security():
     srv = cloudant.get_server(auth=(USER,USER))
     assert_user_roles(srv, USER, ["_admin"])
+
+
+# cassim tests
+
+def test_cassim():
+    enable_cassim()
+
+    srv = cloudant.get_server(auth=(USER,USER))
+
+    for roles in ROLES_LIST:
+        # Give cassim a second to catch up
+        time.sleep(1)
+        # print "Testing cassim with roles: {}".format(roles)
+        assert_user_roles(srv, USER, roles)
+        assert_cassim_roles(roles)

@@ -68,6 +68,24 @@ def set_security(srv, roles=None):
         db.set_security(sec_doc)
 
 
+# Manually set cassim roles for testing the changes reader
+def manually_set_cassim_security(roles=None):
+    sec_doc = copy.deepcopy(SEC_DOC)
+    if roles is not None:
+        sec_doc["cloudant"]["bar"] = roles
+    suffix = current_db_suffix()
+    doc_id = "{0}/{1}/_security{2}".format(OWNER, SHARED_DB, suffix)
+    escaped_doc_id = doc_id.replace('/', '%2f')
+    sec_doc["_id"] = doc_id
+
+    srv = cloudant.get_server()
+    cdb = srv.db(CASSIM_DB)
+    if cdb.doc_exists(escaped_doc_id):
+        doc = cdb.doc_open(escaped_doc_id)
+        sec_doc["_rev"] = doc["_rev"]
+    cdb.doc_save(sec_doc)
+
+
 def check_roles(srv, roles=[]):
     # check _reader
     try:
@@ -95,11 +113,11 @@ def assert_user_roles(srv, user, roles):
         check_roles(srv, roles)
 
 
-def assert_cassim_roles(srv, roles):
+def assert_cassim_roles(roles):
     suffix = current_db_suffix()
     url = "/cassim/{0}%2f{1}%2f_security{2}".format(OWNER, SHARED_DB, suffix)
-    srv2 = cloudant.get_server()
-    resp = srv2.res.get(url).json()
+    srv = cloudant.get_server()
+    resp = srv.res.get(url).json()
     bar_roles = resp["cloudant"].get("bar", [])
     assert(bar_roles == roles)
 
@@ -164,3 +182,18 @@ def test_cassim():
         # print "Testing cassim with roles: {}".format(roles)
         assert_user_roles(srv, USER, roles)
         assert_cassim_roles(roles)
+
+
+def test_cassim_changes_reader():
+    enable_cassim()
+
+    srv = cloudant.get_server(auth=(USER,USER))
+
+    for roles in ROLES_LIST:
+        manually_set_cassim_security(roles)
+        assert_cassim_roles(roles)
+        # Give cassim a second to catch up
+        time.sleep(1)
+        # print "Testing manual cassim with roles: {}".format(roles)
+        with srv.user_context(USER, USER, owner=OWNER):
+            check_roles(srv, roles)

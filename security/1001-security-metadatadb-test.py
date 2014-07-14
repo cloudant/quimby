@@ -141,6 +141,22 @@ def suffix_to_string(suffix):
     return ''.join(map(chr, suffix))
 
 
+def check_cassim_roles(srv, roles):
+    # Give cassim a second to catch up
+    time.sleep(1)
+    assert_user_roles(srv, USER, roles)
+    assert_cassim_roles(roles)
+
+
+def check_cassim_changes_roles(srv, roles):
+    manually_set_cassim_security(roles)
+    assert_cassim_roles(roles)
+    # Give cassim a second to catch up
+    time.sleep(1)
+    with srv.user_context(USER, USER, owner=OWNER):
+        check_roles(srv, roles)
+
+
 # roles = []
 def test_basic_security():
     srv = cloudant.get_server(auth=(USER,USER))
@@ -185,11 +201,7 @@ def test_cassim():
     srv = cloudant.get_server(auth=(USER,USER))
 
     for roles in ROLES_LIST:
-        # Give cassim a second to catch up
-        time.sleep(1)
-        # print "Testing cassim with roles: {}".format(roles)
-        assert_user_roles(srv, USER, roles)
-        assert_cassim_roles(roles)
+        yield check_cassim_roles, srv, roles
 
 
 def test_cassim_changes_reader():
@@ -198,10 +210,4 @@ def test_cassim_changes_reader():
     srv = cloudant.get_server(auth=(USER,USER))
 
     for roles in ROLES_LIST:
-        manually_set_cassim_security(roles)
-        assert_cassim_roles(roles)
-        # Give cassim a second to catch up
-        time.sleep(1)
-        # print "Testing manual cassim with roles: {}".format(roles)
-        with srv.user_context(USER, USER, owner=OWNER):
-            check_roles(srv, roles)
+        yield check_cassim_changes_roles, srv, roles

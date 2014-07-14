@@ -58,6 +58,14 @@ def setup_module():
         db.reset()
 
 
+def teardown_module():
+    srv = cloudant.get_server()
+    disable_cassim(srv)
+    with srv.user_context(OWNER, OWNER):
+        db = srv.db(SHARED_DB)
+        db.delete()
+
+
 def set_security(srv, roles=None):
     sec_doc = copy.deepcopy(SEC_DOC)
     if roles is not None:

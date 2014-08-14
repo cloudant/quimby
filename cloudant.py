@@ -296,40 +296,34 @@ class Server(object):
         db = self.db("_users")
         if not db.exists():
             db.create()
-        user = [
-            ("username", username),
-            ("password", password),
-            ("email", email)
-        ]
+        user = {
+            "_id": "org.couchdb.user:%s" % username,
+            "name": username,
+            "type": "user",
+            "roles": [],
+            "password": password
+        }
         if roles is not None:
             for r in roles:
                 if not isinstance(r, basestring):
                     raise TypeError("'%r' is not a string" % r)
-                user.append(("roles", r))
-        hdrs = {"Content-Type": "application/x-www-form-urlencoded"}
-        return self.res.post("_user", headers=hdrs, data=user)
+                user["roles"].append(r)
+        return self.res.put("_users/" + user["_id"], data=json.dumps(user))
 
     def user_exists(self, username):
         db = self.db("_users")
         with db.srv.res.return_errors():
-            db.doc_open(username)
+            db.doc_open("org.couchdb.user:" + username)
             return 200 <= self.res.last_req.status_code < 300
 
     @ctx.contextmanager
-    def user_context(self, username, password, owner=None):
-        x_cloudant_user = owner or username
+    def user_context(self, username, password):
         orig_auth = self.res.s.auth
-        orig_user = self.res.s.headers.get("X-Cloudant-User")
         try:
             self.res.s.auth = (username, password)
-            self.res.s.headers["X-Cloudant-User"] = x_cloudant_user
             yield
         finally:
             self.res.s.auth = orig_auth
-            if orig_user is None:
-                self.res.s.headers.pop("X-Cloudant-User")
-            else:
-                self.res.s.headers["X-Cloudant-User"] = orig_user
 
     def wait_for_indexers(self, dbname=None, design_doc=None,
             min_delay=0.5, delay=0.25, max_delay=30.0):

@@ -62,5 +62,3 @@ def create_streaming_db():
     load_ddoc(db)
     load_data(db)
     return db
-
-

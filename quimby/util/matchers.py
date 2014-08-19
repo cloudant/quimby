@@ -1,5 +1,14 @@
 
+from hamcrest import *
 from hamcrest.core.base_matcher import BaseMatcher
+
+
+is_ok = is_(200)
+is_accepted = is_in([200, 201, 202])
+is_bad_request = is_(400)
+is_forbidden = is_(403)
+is_not_found = is_(404)
+is_precondition_failed = is_(412)
 
 
 class HasHeader(BaseMatcher):

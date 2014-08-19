@@ -17,6 +17,8 @@ import StringIO
 import requests
 
 
+import quimby.env
+
 
 # Disable logging from requests
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -50,22 +52,26 @@ def parse_shard_name(name):
 
 def get_server(node=None, interface="private", user="admin", auth=None):
     if auth is None:
-        auth = CONFIG.get_user(user)
+        auth = quimby.env.CONFIG.get_user(user)
     if node is None:
-        url = CONFIG.cluster_url
+        url = quimby.env.CONFIG.cluster_url
     else:
-        url = "".join((CONFIG.protocol, "://", CONFIG.nodes[node][interface]))
+        url = "".join([
+            quimby.env.CONFIG.protocol,
+            "://",
+            quimby.env.CONFIG.nodes[node][interface]
+        ])
     return Server(url, auth=auth)
 
 
 def random_node(interface="private", user="admin"):
-    name = random.choice(CONFIG.nodes.keys())
+    name = random.choice(quimby.env.CONFIG.nodes.keys())
     return get_server(node=name, interface=interface, user=user)
 
 
 def nodes(interface="private", user="admin"):
     ret = []
-    for name in CONFIG.nodes.keys():
+    for name in quimby.env.CONFIG.nodes.keys():
         ret.append(get_server(node=name, interface=interface, user=user))
     return ret
 

@@ -1,45 +1,40 @@
 
-from hamcrest import *
 
-import cloudant
+from hamcrest import assert_that, has_entry, has_length
+from quimby.util.matchers import is_precondition_failed
+from quimby.util.test import DbPerClass, requires
 
-
-NUM_ROWS = 100
-
-
-def setup_module():
-    srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
-    db.reset(q=4)
-    docs = []
-    for i in range(NUM_ROWS):
-        docs.append({"value":i})
-    db.bulk_docs(docs)
+import quimby.data as data
 
 
-def test_all_docs():
-    # Check that we can run with maintenance mode on a number
-    # of servers. This has an assumption that the last node in
-    # the cluster has a fully shard ring. To make this more better
-    # we should compare the list of nodes returned to the shard
-    # map so that we can remove non-shard-containing nodes from
-    # service first.
-    srv = cloudant.get_server()
-    db = srv.db("test_suite_db")
-    nodes = cloudant.nodes(interface="public")
-    try:
-        for n in nodes[:-1]:
-            n.config_set("cloudant", "maintenance_mode", "true")
-            v = db.all_docs()
-            assert_that(v.rows, has_length(100))
-        n = nodes[-1]
-        n.config_set("cloudant", "maintenance_mode", "true")
+NUM_DOCS = 150
+
+
+@requires("cluster")
+class AllDocsMaintenanceModeTests(DbPerClass):
+
+    def __init__(self, *args, **kwargs):
+        super(AllDocsMaintenanceModeTests, self).__init__(*args, **kwargs)
+        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+
+    def test_maintenance_mode(self):
+        # Check that we can run with maintenance mode on a number
+        # of servers. This has an assumption that the last node in
+        # the cluster has a full shard ring. To make this better
+        # we should compare the list of nodes returned to the shard
+        # map so that we can remove non-shard-containing nodes from
+        # service first.
+        nodes = self.srv.get_nodes()
         try:
-            db.all_docs()
-        except:
-            assert_that(srv.res.last_req.json(), has_entry("error", "nodedown"))
-        else:
-            raise AssertionError("View should not complete successfully")
-    finally:
-        for n in nodes:
-            n.config_set("cloudant", "maintenance_mode", "false")
+            for n in nodes[:-1]:
+                n.config_set("cloudant", "maintenance_mode", "true")
+                v = self.db.all_docs()
+                assert_that(v.rows, has_length(100))
+            nodes[-1].config_set("cloudant", "maintenance_mode", "true")
+            with self.res.return_errors():
+                r = self.res.get(self.db.path("/_all_docs"))
+            assert_that(r.status_code, is_precondition_failed)
+            assert_that(r.json(), has_entry("error", "nodedown"))
+        finally:
+            for n in nodes:
+                n.config_set("cloudant", "maintenance_mode", "false")

@@ -1,19 +1,27 @@
 
-from hamcrest import *
 
-import cloudant
-import streaming.util
+from hamcrest import assert_that, has_key, has_length, only_contains
+from quimby.util.test import DbPerClass
 
-
-def test_all_docs():
-    db = streaming.util.create_streaming_db()
-    v = db.all_docs()
-    assert_that(v.rows, has_length(streaming.util.NUM_DOCS))
-    assert_that(v.rows, has_item(has_entry("id", "_design/foo")))
+import quimby.data as data
 
 
-def test_all_docs_include_docs():
-    db = streaming.util.create_streaming_db()
-    v = db.all_docs(include_docs=True)
-    assert_that(v.rows, has_length(streaming.util.NUM_DOCS))
-    assert_that(v.rows, only_contains(has_key("doc")))
+NUM_DOCS = 150
+
+
+class AllDocsStreamingTests(DbPerClass):
+
+    Q = 1
+
+    def __init__(self, *args, **kwargs):
+        super(AllDocsStreamingTests, self).__init__(*args, **kwargs)
+        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+
+    def test_basic(self):
+        r = self.db.all_docs()
+        assert_that(r.rows, has_length(NUM_DOCS))
+
+    def test_include_docs(self):
+        r = self.db.all_docs(include_docs=True)
+        assert_that(r.rows, has_length(NUM_DOCS))
+        assert_that(r.rows, only_contains(has_key("doc")))

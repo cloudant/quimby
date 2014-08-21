@@ -1,5 +1,6 @@
 
 import gzip as gziplib
+import StringIO
 
 
 def gzip(string):

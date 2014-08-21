@@ -1,18 +1,17 @@
 
-from hamcrest import *
-from quimby.util.matchers import *
-from quimby.util.test import *
+from hamcrest import assert_that, has_entry, has_items
+from quimby.util.matchers import is_accepted
+from quimby.util.test import DbPerTest
 
 
-class DbInfoTest(unittest.TestCase):
+class DbInfoTest(DbPerTest):
 
-    @setup_random_db()
     def setUp(self):
-        pass
+        super(DbInfoTest, self).setUp(q=1)
 
     def test_get_db_metadata(self):
         with self.res.return_errors():
-            r = self.res.get(self.db_name)
+            r = self.res.get(self.db.path(""))
 
         assert_that(r.status_code, is_accepted)
 
@@ -28,7 +27,7 @@ class DbInfoTest(unittest.TestCase):
             "purge_seq",
             "update_seq"
         ]
-        assert_that(response.json().keys(), has_items(items))
+        assert_that(r.json().keys(), has_items(items))
 
-        expect_db_name = self.db_name.replace("%2f", "/")
-        assert_that(response.json(), has_entry("db_name", expect_db_name))
+        expect_db_name = self.db.name.replace("%2f", "/")
+        assert_that(r.json(), has_entry("db_name", expect_db_name))

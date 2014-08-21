@@ -1,5 +1,5 @@
 
-from hamcrest import *
+from hamcrest import greater_than_or_equal_to, is_, is_in
 from hamcrest.core.base_matcher import BaseMatcher
 
 
@@ -9,6 +9,8 @@ is_bad_request = is_(400)
 is_forbidden = is_(403)
 is_not_found = is_(404)
 is_precondition_failed = is_(412)
+is_unsupported_media_type = is_(415)
+is_error = greater_than_or_equal_to(500)
 
 
 class HasHeader(BaseMatcher):

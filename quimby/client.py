@@ -1,21 +1,14 @@
 
-import base64
 import contextlib as ctx
-import hashlib
 import json
 import logging
 import os
-import random
 import re
-import struct
 import time
 import urllib
 import urlparse
-import StringIO
-
 
 import requests
-
 
 import quimby.env
 
@@ -26,17 +19,6 @@ logging.getLogger("requests").setLevel(logging.WARNING)
 
 DBNAME_PAT = r"shards/[a-fA-F0-9]{8}-[a-fA-F0-9]{8}/([^.]+)"
 DBNAME_RE = re.compile(DBNAME_PAT)
-HAPROXY_PORT = os.environ.get("HAPROXY_PORT", "5984")
-
-
-def dbcopy_docid(key):
-    if not isinstance(key, basestring):
-        raise ValueError("only strings are currently supported")
-    # First two bytes are 131, 109 for the external term format
-    external = "\x83m" + struct.pack(">I", len(key)) + str(key)
-    md5sum = hashlib.md5(external).digest()
-    b64 = base64.b64encode(md5sum).rstrip("=")
-    return b64.replace("/", "_").replace("+", "-")
 
 
 def quote(str):
@@ -50,30 +32,8 @@ def parse_shard_name(name):
     return match.group(1)
 
 
-def get_server(node=None, interface="private", user="admin", auth=None):
-    if auth is None:
-        auth = quimby.env.CONFIG.get_user(user)
-    if node is None:
-        url = quimby.env.CONFIG.cluster_url
-    else:
-        url = "".join([
-            quimby.env.CONFIG.protocol,
-            "://",
-            quimby.env.CONFIG.nodes[node][interface]
-        ])
-    return Server(url, auth=auth)
-
-
-def random_node(interface="private", user="admin"):
-    name = random.choice(quimby.env.CONFIG.nodes.keys())
-    return get_server(node=name, interface=interface, user=user)
-
-
-def nodes(interface="private", user="admin"):
-    ret = []
-    for name in quimby.env.CONFIG.nodes.keys():
-        ret.append(get_server(node=name, interface=interface, user=user))
-    return ret
+def default_server():
+    return Server(quimby.env.DEFAULT_NODE, auth=quimby.env.ADMIN)
 
 
 class Resource(object):
@@ -140,6 +100,13 @@ class Server(object):
             raise ValueError("Invalid server URL: %s" % url)
         self.res = Resource(self.scheme, self.netloc, auth=auth)
 
+    def nodes(self, public=True):
+        if public:
+            nodes = quimby.env.PUBLIC_NODES
+        else:
+            nodes = quimby.env.PRIVATE_NODES
+        return map(lambda u: Server(u, auth=quimby.env.ADMIN), nodes)
+
     def welcome(self):
         r = self.res.get("")
         return r.json()
@@ -199,13 +166,13 @@ class Server(object):
                 return True
             else:
                 user['config'] = config
-                resp = self.res.put(
+                r = self.res.put(
                     "_users/{0}".format(username),
                     data=json.dumps(user)
                 )
-                return 200 <= self.res.last_req.status_code < 300
+                return 200 <= r.status_code < 300
 
-    def user_create(self, username, password, email, roles=None):
+    def user_create(self, username, password, email, roles=None, dbname=None):
         db = self.db("_users")
         if not db.exists():
             db.create()
@@ -230,6 +197,15 @@ class Server(object):
             return 200 <= self.res.last_req.status_code < 300
 
     @ctx.contextmanager
+    def anonymous_user_context(self):
+        orig_auth = self.res.s.auth
+        try:
+            self.res.s.auth = None
+            yield
+        finally:
+            self.res.s.auth = orig_auth
+
+    @ctx.contextmanager
     def user_context(self, username, password):
         orig_auth = self.res.s.auth
         try:
@@ -238,10 +214,17 @@ class Server(object):
         finally:
             self.res.s.auth = orig_auth
 
-    def wait_for_indexers(self, dbname=None, design_doc=None,
-            min_delay=0.5, delay=0.25, max_delay=30.0):
+    def wait_for_indexers(
+            self,
+            dbname=None,
+            design_doc=None,
+            min_delay=0.5,
+            delay=0.25,
+            max_delay=30.0):
+
         if design_doc is not None and not design_doc.startswith("_design/"):
             design_doc = "_design/" + design_doc
+
         def _match(t):
             if t.get("type") != "indexer":
                 return False
@@ -256,7 +239,7 @@ class Server(object):
             time.sleep(min_delay)
         while any(_match(t) for t in self.active_tasks()):
             if time.time() - start > max_delay:
-                raise RuntimError("Timeout waiting for indexer tasks")
+                raise RuntimeError("Timeout waiting for indexer tasks")
             time.sleep(1.0)
 
     def last_status_code(self):
@@ -321,6 +304,10 @@ class Database(object):
         params = self._params(kwargs)
         return self.srv.res.get(self.name, params=params).json()
 
+    def shards(self):
+        r = self.srv.res.get(self.path("_shards"))
+        return r.json()["shards"]
+
     def compact(self, wait=False, **kwargs):
         params = self._params(kwargs)
         r = self.srv.res.post(self.path("_compact"), params=params)
@@ -377,7 +364,11 @@ class Database(object):
     def bulk_docs(self, docs, **kwargs):
         params = self._params(kwargs)
         data = json.dumps({"docs": docs})
-        r = self.srv.res.post(self.path("_bulk_docs"), params=params, data=data)
+        r = self.srv.res.post(
+            self.path("_bulk_docs"),
+            params=params,
+            data=data
+        )
         ret = r.json()
         for idx, result in enumerate(ret):
             if "error" in result:
@@ -401,11 +392,11 @@ class Database(object):
 
     def wait_for_change(self, since, timeout=5000):
         c = self.changes(
-                feed="longpoll",
-                limit=1,
-                since=since,
-                timeout=timeout
-            )
+            feed="longpoll",
+            limit=1,
+            since=since,
+            timeout=timeout
+        )
         if not len(c.results):
             raise RuntimeError("No change")
         return c.last_seq
@@ -432,7 +423,7 @@ class Database(object):
         data = None
         func = self.srv.res.get
         if "keys" in kwargs:
-            data = json.dumps({"keys":kwargs.pop("keys")})
+            data = json.dumps({"keys": kwargs.pop("keys")})
             func = self.srv.res.post
         params = self._params(kwargs)
         r = func(path, data=data, params=params, stream=True)
@@ -569,7 +560,8 @@ class ViewIterator(object):
         if line.endswith("]}"):
             header = json.loads(line)
         else:
-            assert line.rstrip().endswith("["), "Invalid view result: %s" % line
+            assert line.rstrip().endswith("["), \
+                "Invalid view result: %s" % line
             header = json.loads(line + "]}")
         assert "rows" in header, "Invalid view result"
 
@@ -589,7 +581,7 @@ class ViewIterator(object):
             yield json.loads(line.rstrip(","))
 
     def _read(self):
-        if self._rows == None:
+        if self._rows is None:
             self._rows = []
             for row in self:
                 self._rows.append(row)

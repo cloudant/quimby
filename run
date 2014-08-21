@@ -14,8 +14,4 @@ if [ ! -d ./venv/ ]; then
     echo "ok"
 fi
 
-exec ./venv/bin/nosetests -v -s \
-    --all-modules \
-    --no-byte-compile \
-    --with-xunit \
-    $@
+exec python -m quimby.main $@

@@ -1,27 +1,39 @@
 
 
-from hamcrest import *
-from quimby.util.matchers import *
-from quimby.testuitl import *
+import uuid
+
+from hamcrest import assert_that, has_length, only_contains
+from quimby.util.matchers import \
+    is_accepted, \
+    is_bad_request, \
+    is_precondition_failed
+
+from quimby.util.matchers import is_ok, is_not_found
+from quimby.util.test import DbPerTest, requires
 
 
-class DbCreateDeleteTest(unittest.TestCase):
+class DbCreateDeleteTest(DbPerTest):
 
-    @setup_random_db()
     def setUp(self):
-        pass
+        super(DbCreateDeleteTest, self).setUp(q=1)
 
     def test_create(self):
         with self.res.return_errors():
             r = self.res.put(uuid.uuid4().hex)
             assert_that(r.status_code, is_accepted)
 
-    @cluster_test
+    @requires("clusters")
+    def test_default_n_and_q(self):
+        shards = self.db.shards()
+        assert_that(shards, has_length(8))
+        assert_that(shards, only_contains(has_length(3)))
+
+    @requires("cluster")
     def create_with_q(self):
         db_name = uuid.uuid4().hex
-        
+
         with self.res.return_errors():
-            r = self.res.put(db_name, params={"q":"1"})
+            r = self.res.put(db_name, params={"q": "1"})
             assert_that(r.status_code, is_accepted)
 
             r = self.res.get(db_name + "/_shards")
@@ -29,21 +41,21 @@ class DbCreateDeleteTest(unittest.TestCase):
             shards = r.json()["shards"]
             assert_that(shards, has_length(1))
 
-    @cluster_test
+    @requires("cluster")
     def create_with_n(self):
         db_name = uuid.uuid4().hex
-        
+
         with self.return_errors():
             r = self.res.put(db_name, params={"q": 1, "n": 1})
             assert_that(r.status_code, is_accepted)
-            
+
             r = self.res.get(db_name + "/_shards")
             assert_that(r.status_code, is_ok)
             shards = r.json()["shards"]
             assert_that(shards, has_length(1))
             assert_that(shards[0], has_length(1))
 
-    def test_failure_on_bad_name(self):        
+    def test_failure_on_bad_name(self):
         with self.res.return_errors():
             r = self.res.put("INVALID")
             assert_that(r.status_code, is_bad_request)
@@ -53,7 +65,7 @@ class DbCreateDeleteTest(unittest.TestCase):
 
     def test_failure_when_exists(self):
         with self.res.return_errors():
-            r = self.res.put(self.db_name)
+            r = self.res.put(self.db.name)
             assert_that(r.status_code, is_precondition_failed)
 
     def test_delete_non_existent(self):
@@ -63,5 +75,5 @@ class DbCreateDeleteTest(unittest.TestCase):
 
     def test_delete_existing_db(self):
         with self.res.return_errors():
-            r = self.res.delete(self.db_name)
+            r = self.res.delete(self.db.name)
             assert_that(r.status_code, is_accepted)

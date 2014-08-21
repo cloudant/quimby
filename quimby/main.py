@@ -19,6 +19,8 @@ import types
 import unittest
 
 
+from quimby.util.test import DbPerClass, DbPerTest
+
 AUTHOR = "Cloudant, an IBM Company"
 USAGE = "%prog [OPTIONS] PATH1 [PATH2 ...]"
 
@@ -32,6 +34,8 @@ def tests_from_file(fname):
         exit(1)
     for k, v in env.items():
         if type(v) is not type:
+            continue
+        if v in (DbPerClass, DbPerTest):
             continue
         if issubclass(v, unittest.TestCase):
             print k, v

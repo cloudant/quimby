@@ -36,7 +36,7 @@ class DbPerTest(unittest.TestCase):
 
     def setUp(self):
         super(DbPerTest, self).setUp()
-        self.srv = quimby.client.get_server()
+        self.srv = quimby.client.default_server()
         self.db = self.srv.db(random_db_name())
         self.db.create(q=self.Q, n=self.N)
         self.res = self.srv.res

@@ -22,9 +22,6 @@ import quimby.data as data
 
 class InternalReplicationTests(DbPerTest):
 
-    def setUp(self):
-        super(InternalReplicationTests, self).setUp(q=1)
-
     def test_basic_internal_replication(self):
         private_nodes = [n.private() for n in self.srv.nodes()]
 

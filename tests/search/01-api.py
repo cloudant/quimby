@@ -1,4 +1,6 @@
 
+import copy
+
 from hamcrest import assert_that, has_key, has_length
 from quimby.util.matchers import is_accepted
 from quimby.util.test import DbPerClass, requires
@@ -20,8 +22,8 @@ DDOC = {
 @requires("search")
 class SearchAPITests(DbPerClass):
 
-    def __init__(self, *args, **kwargs):
-        super(SearchAPITests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(count=NUM_DOCS, value="foo"))
         self.db.doc_save(DDOC)
 

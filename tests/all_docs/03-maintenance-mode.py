@@ -13,8 +13,8 @@ NUM_DOCS = 150
 @requires("cluster")
 class AllDocsMaintenanceModeTests(DbPerClass):
 
-    def __init__(self, *args, **kwargs):
-        super(AllDocsMaintenanceModeTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_maintenance_mode(self):

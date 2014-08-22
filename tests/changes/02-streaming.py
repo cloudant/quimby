@@ -36,8 +36,8 @@ BAD_SINCE = "".join("""
 
 class ChangesStreamingTests(DbPerClass):
 
-    def __init__(self, *args, **kwargs):
-        super(ChangesStreamingTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
         self.db.doc_save(copy.deepcopy(data.SIMPLE_MAP_RED_DDOC), w=3)
 

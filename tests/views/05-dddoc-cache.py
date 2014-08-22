@@ -11,8 +11,8 @@ class ViewDDocCacheTests(DbPerClass):
 
     Q = 8
 
-    def __init__(self, *args, **kwargs):
-        super(ViewDDocCacheTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         docs = [
             {"_id": "a", "key": "a", "val": 1},
             {"_id": "b", "key": "b", "val": 1},

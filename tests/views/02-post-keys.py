@@ -12,8 +12,8 @@ class ViewAPITests(DbPerClass):
 
     Q = 8
 
-    def __init__(self, *args, **kwargs):
-        super(ViewAPITests, self).__init__()
+    @classmethod
+    def setUpClass(klass):
         self.db.doc_save(self.ddoc())
         docs = [
             {"_id": "a", "key": "a", "vals": 1},

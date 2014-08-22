@@ -13,8 +13,8 @@ class AllDocsStreamingTests(DbPerClass):
 
     Q = 1
 
-    def __init__(self, *args, **kwargs):
-        super(AllDocsStreamingTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_basic(self):

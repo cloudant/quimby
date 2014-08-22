@@ -11,8 +11,8 @@ NUM_ROWS = 100
 
 class ViewMaintenanceModeTests(DbPerClass):
 
-    def __init__(self, *args, **kwargs):
-        super(ViewMaintenanceModeTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_ROWS), w=3)
         self.db.doc_save(data.SIMPLE_MAP_RED_DDOC, w=3)
 

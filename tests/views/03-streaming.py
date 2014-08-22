@@ -22,8 +22,8 @@ INT_TYPE = any_of(instance_of(int), instance_of(long))
 
 class StreamingMapViewTests(DbPerClass):
 
-    def __init__(self, *args, **kwargs):
-        super(StreamingMapViewTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_DOCS, value=1), w=3)
         self.db.doc_save(copy.deepcopy(data.SIMPLE_MAP_RED_DDOC), w=3)
 

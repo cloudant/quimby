@@ -29,8 +29,8 @@ class ChangesMaintenanceModeTests(DbPerClass):
 
     Q = 4
 
-    def __init__(self, *args, **kwargs):
-        super(ChangesMaintenanceModeTests, self).__init__(*args, **kwargs)
+    @classmethod
+    def setUpClass(klass):
         self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_basic(self):

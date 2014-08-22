@@ -1,6 +1,8 @@
 
+import copy
 
-SIMPLE_DOCS = [
+
+_simple_docs = [
     {"_id": "Rob", "location": "Bristol"},
     {"_id": "Ulises", "location": "Aberdeen"},
     {"_id": "Simon", "location": "Bristol"},
@@ -9,7 +11,7 @@ SIMPLE_DOCS = [
 ]
 
 
-SIMPLE_MAP_RED_DDOC = {
+_simple_map_red_doc = {
     "_id": "_design/foo",
     "views": {
         "bar": {
@@ -21,6 +23,14 @@ SIMPLE_MAP_RED_DDOC = {
         }
     }
 }
+
+
+def simple_docs():
+    return copy.deepcopy(_simple_docs)
+
+
+def simple_map_red_doc():
+    return copy.deepcopy(_simple_map_red_doc)
 
 
 def gen_docs(count=25, value=0):

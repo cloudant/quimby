@@ -14,7 +14,8 @@ class ViewAPITests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.doc_save(self.ddoc())
+        super(ViewAPITests, klass).setUpClass()
+        klass.db.doc_save(klass.ddoc())
         docs = [
             {"_id": "a", "key": "a", "vals": 1},
             {"_id": "b", "key": "b", "vals": 1},
@@ -23,38 +24,38 @@ class ViewAPITests(DbPerClass):
             {"_id": "e", "key":   1, "vals": 2},
             {"_id": "f", "key": "f", "vals": 1}
         ]
-        self.db.bulk_docs(docs)
+        klass.db.bulk_docs(docs)
 
     def test_empty_keys(self):
-        self.run([], [])
+        self.do_check([], [])
 
     def test_missing_key(self):
-        self.run(["z"], [], reduce_keys=[])
+        self.do_check(["z"], [], reduce_keys=[])
 
     def test_single_unique_key(self):
-        self.run(["b"], ["b"])
+        self.do_check(["b"], ["b"])
 
     def test_one_key_present_one_key_missing(self):
-        self.run(["b", "z"], ["b"], reduce_keys=[])
+        self.do_check(["b", "z"], ["b"], reduce_keys=[])
 
     def test_one_key_present_one_key_missing_different_order(self):
-        self.run(["z", "b"], ["b"], reduce_keys=["b"])
+        self.do_check(["z", "b"], ["b"], reduce_keys=["b"])
 
     def test_multiple_keys(self):
-        self.run(["b", "f"], ["b", "f"])
+        self.do_check(["b", "f"], ["b", "f"])
 
     def test_multiple_keys_different_order(self):
-        self.run(["f", "b"], ["f", "b"])
+        self.do_check(["f", "b"], ["f", "b"])
 
     def test_repeated_keys(self):
-        self.run(["b", "b"], ["b", "b"], skip_reduce=True)
+        self.do_check(["b", "b"], ["b", "b"], skip_reduce=True)
 
     def test_single_key_multiple_rows(self):
-        self.run(["a"], [("a", "a"), ("d", "a")])
+        self.do_check(["a"], [("a", "a"), ("d", "a")])
 
     def test_repeated_key_with_multiple_rows(self):
         # This needs to change after BugzId: 23155
-        self.run(
+        self.do_check(
             ["a", "a"],
             [("a", "a"), ("a", "a"), ("d", "a"), ("d", "a")],
             skip_reduce=True
@@ -64,7 +65,7 @@ class ViewAPITests(DbPerClass):
         # This needs to change after BugzId: 23155
         keys = ["a", "b", "a"]
         expect = ["b", ("a", "a"), ("a", "a"), ("d", "a"), ("d", "a")]
-        self.run(keys, expect, skip_reduce=True)
+        self.do_check(keys, expect, skip_reduce=True)
 
     def test_multiple_multiple_rows(self):
         # This needs to change after BugzId: 23155
@@ -78,14 +79,14 @@ class ViewAPITests(DbPerClass):
             "c",
             "c"
         ]
-        self.run(keys, expect, skip_reduce=True)
+        self.do_check(keys, expect, skip_reduce=True)
 
     def test_multiples_with_repeated(self):
         keys = ["a", "c", "b", "b"]
         expect = [("a", "a"), ("d", "a"), "c", "c", "c", "b", "b"]
-        self.run(keys, expect, skip_reduce=True)
+        self.do_check(keys, expect, skip_reduce=True)
 
-    def run(self, keys, expect, skip_reduce=False, reduce_keys=None):
+    def do_check(self, keys, expect, skip_reduce=False, reduce_keys=None):
         # Check map view keys
         v = self.db.view("foo", "bar", keys=keys)
         assert_that(v.rows, has_length(len(expect)))
@@ -108,7 +109,8 @@ class ViewAPITests(DbPerClass):
         for i, k in enumerate(keys):
             assert_that(v.rows[i], has_entry("key", k))
 
-    def ddoc():
+    @classmethod
+    def ddoc(klass):
         bar_map = textwrap.dedent("""\
         function(doc) {
             if(!doc.key) {

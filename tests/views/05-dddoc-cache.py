@@ -13,6 +13,7 @@ class ViewDDocCacheTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
+        super(ViewDDocCacheTests, klass).setUpClass()
         docs = [
             {"_id": "a", "key": "a", "val": 1},
             {"_id": "b", "key": "b", "val": 1},
@@ -33,7 +34,7 @@ class ViewDDocCacheTests(DbPerClass):
             {"_id": "q", "key": "b", "val": 0},
             {"_id": "r", "key": "f", "val": 0}
         ]
-        self.db.bulk_docs(docs)
+        klass.db.bulk_docs(docs)
 
     def test_ddoc_one(self):
         design = self.save_design(self.ddoc_one())
@@ -76,7 +77,7 @@ class ViewDDocCacheTests(DbPerClass):
                 "val": 0,
                 "reject_me": True
             })
-            r = self.res.put(self.path("u"), data=body)
+            r = self.res.put(self.db.path("u"), data=body)
         assert_that(r.status_code, is_forbidden)
         design = self.save_design(self.ddoc_one(), design)
         self.db.doc_save({
@@ -95,8 +96,7 @@ class ViewDDocCacheTests(DbPerClass):
         view = self.db.view("counting", "values")
         assert_that(view.rows[0], has_entry("value", 9))
 
-    def save_design(self, generator, prev=None):
-        doc = generator()
+    def save_design(self, doc, prev=None):
         if prev is not None:
             doc["_rev"] = prev["_rev"]
         self.db.doc_save(doc, w=3)

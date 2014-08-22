@@ -6,29 +6,30 @@ from quimby.util.test import DbPerClass
 import quimby.data as data
 
 
-NUM_ROWS = 100
+NUM_ROWS = 200
 
 
 class ViewMaintenanceModeTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_ROWS), w=3)
-        self.db.doc_save(data.SIMPLE_MAP_RED_DDOC, w=3)
+        super(ViewMaintenanceModeTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_ROWS), w=3)
+        klass.db.doc_save(data.simple_map_red_ddoc(), w=3)
 
     def test_map(self):
-        self.run("bar")
+        self.do_check("bar", NUM_ROWS)
 
     def test_map_stale_ok(self):
-        self.run("bar", stale="ok")
+        self.do_check("bar", NUM_ROWS, stale="ok")
 
     def test_reduce(self):
-        self.run("bam")
+        self.do_check("bam", 1)
 
     def test_reduce_stale_ok(self):
-        self.run("bam", stale="ok")
+        self.do_check("bam", 1, stale="ok")
 
-    def run(self, view, **kwargs):
+    def do_check(self, view, nrows, **kwargs):
         # Check that we can run with maintenance mode on a number
         # of servers. This has an assumption that the last node in
         # the cluster has a full shard ring. To make this more better
@@ -40,12 +41,12 @@ class ViewMaintenanceModeTests(DbPerClass):
             for n in nodes[:-1]:
                 n.config_set("cloudant", "maintenance_mode", "true")
                 v = self.db.view("foo", view, **kwargs)
-                assert_that(v.rows, has_length(NUM_ROWS))
+                assert_that(v.rows, has_length(nrows))
             n = nodes[-1]
             n.config_set("cloudant", "maintenance_mode", "true")
             with self.res.return_errors():
                 p = self.db.path("_design", "foo", "_view", view)
-                r = self.res.get(p, **kwargs)
+                r = self.res.get(p, params=kwargs)
             assert_that(r.status_code, is_error)
             assert_that(r.json(), has_entry("error", "nodedown"))
         finally:

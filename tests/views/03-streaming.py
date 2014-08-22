@@ -1,6 +1,4 @@
 
-import copy
-
 from hamcrest import \
     any_of, \
     assert_that, \
@@ -20,12 +18,13 @@ NUM_DOCS = 200
 INT_TYPE = any_of(instance_of(int), instance_of(long))
 
 
-class StreamingMapViewTests(DbPerClass):
+class StreamingViewTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_DOCS, value=1), w=3)
-        self.db.doc_save(copy.deepcopy(data.SIMPLE_MAP_RED_DDOC), w=3)
+        super(StreamingViewTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_DOCS, value=1), w=3)
+        klass.db.doc_save(data.simple_map_red_ddoc(), w=3)
 
     def test_map(self):
         v = self.db.view("foo", "bar")
@@ -53,7 +52,7 @@ class StreamingMapViewTests(DbPerClass):
     def test_reduce_group_true(self):
         v = self.db.view("foo", "bam", group=True)
         assert_that(v.rows, has_length(2))
-        assert_that(v.rows, only_contains(is_(NUM_DOCS / 2)))
+        assert_that(v.rows, only_contains(has_entry("value", NUM_DOCS/2)))
 
     def test_reduce_stale_ok(self):
         v = self.db.view("foo", "bam", stale="ok")

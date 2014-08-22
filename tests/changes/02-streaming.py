@@ -1,5 +1,4 @@
 
-import copy
 import json
 import time
 
@@ -30,7 +29,8 @@ DOC_COUNT = 151  # Because design doc
 # be something like notreallyanode@127.0.0.1 to guarantee
 # that we would get replacement.
 BAD_SINCE = "".join("""
-    I need to update my bad seq for q=1
+    153-g2wAAAABaANkABhub3RyZWFsbHlhbm9kZUAxMjcuMC4wLjFsAAAAAm
+    EAbgQA_____2poAmGZbQAAAAdhMjAxMjU0ag
 """.split())
 
 
@@ -38,8 +38,9 @@ class ChangesStreamingTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
-        self.db.doc_save(copy.deepcopy(data.SIMPLE_MAP_RED_DDOC), w=3)
+        super(ChangesStreamingTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+        klass.db.doc_save(data.simple_map_red_doc(), w=3)
 
     def test_normal(self):
         c = self.db.changes()
@@ -93,7 +94,7 @@ class ChangesStreamingTests(DbPerClass):
     def test_continuous(self):
         c = self.db.changes(feed="continuous", timeout=500)
         assert_that(c, has_property("last_seq"))
-        assert_that(c.results, has_length(NUM_DOCS))
+        assert_that(c.results, has_length(DOC_COUNT))
         changes_row = all_of(has_key("seq"), has_key("changes"))
         assert_that(c.results, only_contains(changes_row))
 
@@ -132,7 +133,7 @@ class ChangesStreamingTests(DbPerClass):
         assert_that(c.results, has_length(DOC_COUNT))
         # Our new last_seq should also be valid and give us
         # zero changes
-        c = self.db.changes(c.last_seq)
+        c = self.db.changes(since=c.last_seq)
         assert_that(c.results, has_length(0))
 
     def test_longpoll_shard_replacement(self):
@@ -145,7 +146,7 @@ class ChangesStreamingTests(DbPerClass):
         # Our new last_seq should also be valid and give us
         # zero changes
         c = self.db.changes(feed="longpoll", since=c.last_seq, timeout=250)
-        assert_that(c.has_property("last_seq"))
+        assert_that(c, has_property("last_seq"))
         assert_that(c.results, has_length(0))
 
     def test_continuous_shard_replacement(self):
@@ -158,7 +159,7 @@ class ChangesStreamingTests(DbPerClass):
         # Our new last_seq should also be valid and give us
         # zero changes
         c = self.db.changes(feed="continuous", since=c.last_seq, timeout=250)
-        assert_that(c.has_property("last_seq"))
+        assert_that(c, has_property("last_seq"))
         assert_that(c.results, has_length(0))
 
     def test_continuous_with_heartbeat(self):
@@ -178,7 +179,10 @@ class ChangesStreamingTests(DbPerClass):
                 changes_read += 1
         assert_that(changes_read, is_(DOC_COUNT))
         assert_that(heart_beats, is_(3))
-        r.close()
+        # Forcefully close the underlying socket here so
+        # that its not reused because we don't consume
+        # the entire response.
+        r.raw._fp.close()
 
     def test_continuous_with_heartbeat_and_since(self):
         last_seq = self.db.changes().last_seq
@@ -200,7 +204,10 @@ class ChangesStreamingTests(DbPerClass):
                 changes_read += 1
         assert_that(changes_read, is_(0))
         assert_that(heart_beats, is_(3))
-        r.close()
+        # Forcefully close the underlying socket here so
+        # that its not reused because we don't consume
+        # the entire response.
+        r.raw._fp.close()
 
     def test_changes_with_seq_interval(self):
         seq_interval = 3

@@ -20,9 +20,6 @@ import quimby.data as data
 
 class ChangesAPITest(DbPerTest):
 
-    def setUp(self):
-        super(ChangesAPITest, self).setUp(q=1)
-
     def test_basic(self):
         self.db.doc_save({"_id": "Rob", "location": "Bristol"}, w=3)
 
@@ -64,7 +61,7 @@ class ChangesAPITest(DbPerTest):
 
         self.db.doc_save({"_id": "Simon", "location": "Bristol"})
 
-        with self.return_errors():
+        with self.res.return_errors():
             p = {"feed": "longpoll", "since": last_seq}
             r = self.res.get(self.db.path("_changes"), params=p)
 
@@ -76,7 +73,7 @@ class ChangesAPITest(DbPerTest):
         self.db.doc_save({"_id": "Rob", "location": "Bristol"}, w=3)
 
         with self.res.return_errors():
-            p = {"feed": "continuous", "heartbeat": "2000"}
+            p = {"feed": "continuous", "heartbeat": "500"}
             r = self.res.get(self.db.path("_changes"), params=p, stream=True)
 
         assert_that(r.status_code, is_accepted)
@@ -101,7 +98,7 @@ class ChangesAPITest(DbPerTest):
         assert_that(change["id"], is_("Simon"))
 
     def test_changes_filter(self):
-        self.db.bulk_docs(data.SIMPLE_DOCS, w=3)
+        self.db.bulk_docs(data.simple_docs(), w=3)
 
         ddoc = {
             "_id": "_design/filter_test",
@@ -119,7 +116,7 @@ class ChangesAPITest(DbPerTest):
         assert_that(r.status_code, is_accepted)
         assert_that(r.json(), has_key("results"))
         # +1 for the design document
-        assert_that(r.json()["results"], has_length(len(data.SIMPLE_DOCS) + 1))
+        assert_that(r.json()["results"], has_length(len(data.simple_docs()) + 1))
 
         with self.res.return_errors():
             p = {"filter": "filter_test/none"}

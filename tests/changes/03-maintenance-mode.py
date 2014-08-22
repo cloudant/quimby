@@ -31,7 +31,8 @@ class ChangesMaintenanceModeTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+        super(ChangesMaintenanceModeTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_basic(self):
         self.run_changes(100)
@@ -86,7 +87,7 @@ class ChangesMaintenanceModeTests(DbPerClass):
         # we should compare the list of nodes returned to the shard
         # map so that we can remove non-shard-containing nodes from
         # service first.
-        nodes = self.srv.nodes(interface="public")
+        nodes = self.srv.nodes()
         try:
             for n in nodes[:-1]:
                 n.config_set("cloudant", "maintenance_mode", "true")
@@ -98,7 +99,7 @@ class ChangesMaintenanceModeTests(DbPerClass):
             n = nodes[-1]
             n.config_set("cloudant", "maintenance_mode", "true")
             with self.res.return_errors():
-                r = self.res.get(self.db.path("_changes"), **kwargs)
+                r = self.res.get(self.db.path("_changes"), params=kwargs)
             assert_that(r.status_code, is_precondition_failed)
             assert_that(r.json(), has_entry("error", "nodedown"))
         finally:

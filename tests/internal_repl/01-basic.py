@@ -23,7 +23,7 @@ import quimby.data as data
 class InternalReplicationTests(DbPerTest):
 
     def test_basic_internal_replication(self):
-        private_nodes = [n.private() for n in self.srv.nodes()]
+        private_nodes = self.srv.nodes(public=False)
 
         dbsdb = private_nodes[0].db("dbs")
         dbdoc = dbsdb.doc_open(self.db.name)

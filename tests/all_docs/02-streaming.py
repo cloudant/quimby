@@ -15,7 +15,8 @@ class AllDocsStreamingTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+        super(AllDocsStreamingTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_basic(self):
         r = self.db.all_docs()

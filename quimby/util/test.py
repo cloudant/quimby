@@ -22,12 +22,17 @@ class DbPerClass(unittest.TestCase):
     Q = 1
     N = 3
 
-    def __init__(self, *args, **kwargs):
-        super(DbPerClass, self).__init__(*args, **kwargs)
-        self.srv = quimby.client.default_server()
-        self.db = self.srv.db(random_db_name())
-        self.db.create(q=self.Q, n=self.N)
-        self.res = self.srv.res
+    @classmethod
+    def setUpClass(klass):
+        klass.srv = quimby.client.default_server()
+        klass.db = klass.srv.db(random_db_name())
+        klass.db.create(q=klass.Q, n=klass.N)
+        klass.res = klass.srv.res
+
+    def setUp(self):
+        self.srv = self.__class__.srv
+        self.db = self.__class__.db
+        self.res = self.__class__.res
 
 
 class DbPerTest(unittest.TestCase):
@@ -35,7 +40,6 @@ class DbPerTest(unittest.TestCase):
     N = 3
 
     def setUp(self):
-        super(DbPerTest, self).setUp()
         self.srv = quimby.client.default_server()
         self.db = self.srv.db(random_db_name())
         self.db.create(q=self.Q, n=self.N)

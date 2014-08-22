@@ -15,7 +15,8 @@ class AllDocsMaintenanceModeTests(DbPerClass):
 
     @classmethod
     def setUpClass(klass):
-        self.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
+        super(AllDocsMaintenanceModeTests, klass).setUpClass()
+        klass.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
 
     def test_maintenance_mode(self):
         # Check that we can run with maintenance mode on a number
@@ -24,12 +25,12 @@ class AllDocsMaintenanceModeTests(DbPerClass):
         # we should compare the list of nodes returned to the shard
         # map so that we can remove non-shard-containing nodes from
         # service first.
-        nodes = self.srv.get_nodes()
+        nodes = self.srv.nodes()
         try:
             for n in nodes[:-1]:
                 n.config_set("cloudant", "maintenance_mode", "true")
                 v = self.db.all_docs()
-                assert_that(v.rows, has_length(100))
+                assert_that(v.rows, has_length(NUM_DOCS))
             nodes[-1].config_set("cloudant", "maintenance_mode", "true")
             with self.res.return_errors():
                 r = self.res.get(self.db.path("/_all_docs"))

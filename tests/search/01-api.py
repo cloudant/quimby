@@ -48,6 +48,6 @@ class SearchAPITests(DbPerClass):
         params = {"q": query}
         if limit is not None:
             params["limit"] = limit
-        path = self.path("_design", "search", "_view", "text")
+        path = self.db.path("_design", "search", "_view", "text")
         with self.res.return_errors():
             return self.res.get(path, params=params)

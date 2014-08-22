@@ -13,9 +13,6 @@ NUM_CLIENTS = 20
 
 class MultiClientWritersTest(DbPerTest):
 
-    def setUp(self):
-        super(MultiClientWritersTest, self).setUp(q=1)
-
     def test_multiple_clients(self):
         # Here we're testing multiple clients attempting to update
         # a single document and racing to get their update in. To
@@ -32,8 +29,8 @@ class MultiClientWritersTest(DbPerTest):
         # to check when updats were in the same internal write batch.
         # Although we can check for the absence of errors which will
         # have to do for now.
-        n = self.srv.nodes()[0]
-        db = n.private().db(random_db_name())
+        n = self.srv.nodes(public=False)[0]
+        db = n.db(random_db_name())
         db.reset(q=1)
 
         def run_client():

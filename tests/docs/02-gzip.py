@@ -22,7 +22,8 @@ class DocGzipTests(DbPerClass):
         path = self.db.path("%s/html" % doc["_id"])
 
         with self.res.return_errors():
-            r = self.res.put(path, headers=headers, data=data)
+            p = {"rev": doc["_rev"]}
+            r = self.res.put(path, params=p, headers=headers, data=data)
 
         assert_that(r.status_code, is_accepted)
 

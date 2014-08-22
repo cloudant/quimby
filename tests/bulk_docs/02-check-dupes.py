@@ -14,9 +14,6 @@ NUM_LOCAL_TEST_CASES = 100
 
 class DupesInBulkDocsTests(DbPerTest):
 
-    def setUp(self):
-        super(DupesInBulkDocsTests, self).setUp(q=1)
-
     def test_dupes_on_cluster(self):
         self.run_ordering_check(NUM_CLUSTER_TEST_CASES)
 
@@ -97,7 +94,7 @@ class DupesInBulkDocsTests(DbPerTest):
         for comb in itertools.combinations([0, 1, 2, 2, 3, 3], 3):
             yield comb
 
-    def correctly_ordered(ordering, docs_by_name):
+    def correctly_ordered(self, ordering, docs_by_name):
         seen = set()
         elems = []
         is_rev = matches_regexp(r"(\d+)-[a-fA-F0-9]{32}")

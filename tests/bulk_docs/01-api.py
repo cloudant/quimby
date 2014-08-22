@@ -9,7 +9,7 @@ import quimby.data as data
 class BulkDocsAPITest(DbPerTest):
 
     def test_bulk_docs(self):
-        self.db.bulk_docs(data.SIMPLE_DOCS, w=3)
+        self.db.bulk_docs(data.simple_docs(), w=3)
 
         ulises = self.db.doc_open("Ulises")
         ulises["location"] = "Bristol"

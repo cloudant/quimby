@@ -15,7 +15,7 @@ class requires(object):
         self.args = args
 
     def __call__(self, obj):
-        return obj
+        return unittest.skip("Not supported")(obj)
 
 
 class DbPerClass(unittest.TestCase):

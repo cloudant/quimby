@@ -11,7 +11,7 @@ _simple_docs = [
 ]
 
 
-_simple_map_red_doc = {
+_simple_map_red_ddoc = {
     "_id": "_design/foo",
     "views": {
         "bar": {
@@ -29,8 +29,8 @@ def simple_docs():
     return copy.deepcopy(_simple_docs)
 
 
-def simple_map_red_doc():
-    return copy.deepcopy(_simple_map_red_doc)
+def simple_map_red_ddoc():
+    return copy.deepcopy(_simple_map_red_ddoc)
 
 
 def gen_docs(count=25, value=0):

@@ -40,7 +40,7 @@ class ChangesStreamingTests(DbPerClass):
     def setUpClass(klass):
         super(ChangesStreamingTests, klass).setUpClass()
         klass.db.bulk_docs(data.gen_docs(NUM_DOCS), w=3)
-        klass.db.doc_save(data.simple_map_red_doc(), w=3)
+        klass.db.doc_save(data.simple_map_red_ddoc(), w=3)
 
     def test_normal(self):
         c = self.db.changes()

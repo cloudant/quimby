@@ -2,6 +2,7 @@
 import json
 import random
 import time
+import unittest
 import uuid
 
 from concurrent import futures
@@ -42,21 +43,22 @@ class GlobalChangesAPITests(DbPerTest):
         assert_that(c, has_property("results"))
         assert_that(c, has_property("last_seq"))
 
+    @unittest.skip("Too much racey.")
     def test_db_event_types(self):
         # I'm mashing each of these tests together because cycling
         # through dbs is a good way to get the dbcore nodes to hit
         # the file descriptor limit which leads to terribleness.
 
-        def get_changes(self, seq):
+        def get_changes(seq=None):
             kwargs = {
                 "feed": "continuous",
-                "since": seq,
-                "timeout": 500,
-                "limit": 10
+                "timeout": 1000
             }
+            if seq is not None:
+                kwargs["since"] = seq
             return self.srv.global_changes(**kwargs)
 
-        seq = self.srv.global_changes().last_seq
+        seq = get_changes().last_seq
 
         dbname = "test_global_changes_" + uuid.uuid4().hex
         db = self.srv.db(dbname)

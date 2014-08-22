@@ -9,24 +9,23 @@ from quimby.util.matchers import \
     is_precondition_failed
 
 from quimby.util.matchers import is_ok, is_not_found
-from quimby.util.test import DbPerTest, requires
+from quimby.util.test import DbPerTest, random_db_name, requires
 
 
 class DbCreateDeleteTest(DbPerTest):
 
-    def setUp(self):
-        super(DbCreateDeleteTest, self).setUp(q=1)
-
     def test_create(self):
         with self.res.return_errors():
-            r = self.res.put(uuid.uuid4().hex)
+            r = self.res.put(random_db_name())
             assert_that(r.status_code, is_accepted)
 
     @requires("clusters")
     def test_default_n_and_q(self):
-        shards = self.db.shards()
+        db = self.srv.db(random_db_name())
+        db.create(q=8, n=3)
+        shards = db.shards()
         assert_that(shards, has_length(8))
-        assert_that(shards, only_contains(has_length(3)))
+        assert_that(shards.values(), only_contains(has_length(3)))
 
     @requires("cluster")
     def create_with_q(self):

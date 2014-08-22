@@ -172,7 +172,7 @@ class Server(object):
                 )
                 return 200 <= r.status_code < 300
 
-    def user_create(self, username, password, email, roles=None, dbname=None):
+    def user_create(self, username, password, email, roles=None):
         db = self.db("_users")
         if not db.exists():
             db.create()

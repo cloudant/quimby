@@ -1,15 +1,14 @@
-Quimby - DB Core Tests
-======================
+Quimby - Clustered CouchDB Tests
+================================
 
 Yep.
 
 Running
 -------
 
-Until we get dbcore/#158 merged this is a bit manual but totally doable. If
-you clone this repo somewhere all you need to do is this:
+If you clone this repo somewhere all you need to do is this:
 
-    $ # In your dbcore repo
+    $ # In your couch repo
     $ # edit rel/overlay/etc/local.ini to look like this:
     $ cat rel/overlay/etc/local.ini
     ; local customizations are stored here
@@ -18,8 +17,8 @@ you clone this repo somewhere all you need to do is this:
     $ # and then...
     $ ./dev/run
 
-Once you have DB Core running and requiring the adm account then all you
-need to do in this repository is run:
+Once you have a clustered Couch running and requiring the adm account then all
+you need to do in this repository is run:
 
     $ ./run
 
@@ -30,6 +29,6 @@ environment to be created then you probably need to install virtualenv.
 ToDo
 ----
 
-I need to rearrange tests sot hat they're more better organized
-and so that everythign is under the quimby namespace except cloudant.py
+Need to rearrange tests so that they're more better organized
+and so that everything is under the quimby namespace except cloudant.py
 which I may end up breaking out into a separate project.

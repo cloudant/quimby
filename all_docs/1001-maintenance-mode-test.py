@@ -37,7 +37,9 @@ def test_all_docs():
         try:
             db.all_docs()
         except:
-            assert_that(srv.res.last_req.json(), has_entry("error", "nodedown"))
+            assert_that(srv.res.last_req.json(), has_key("error"))
+            assert_that(srv.res.last_req.json(),
+                has_entry("reason", "No DB shards could be opened."))
         else:
             raise AssertionError("View should not complete successfully")
     finally:

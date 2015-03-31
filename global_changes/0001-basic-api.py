@@ -119,7 +119,7 @@ def test_descending():
     assert_that(db.info()["doc_count"], greater_than_or_equal_to(4))
     c = srv.global_changes(limit=5, descending=True)
     def int_seq(res):
-        return int(res["seq"].split("-", 1)[0])
+        return res["seq"][0]
     start = int_seq(c.results[0])
     # There's a bug in the underlying changes behavior that does weird
     # things to the since sequence on descending requests. We should

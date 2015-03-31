@@ -7,6 +7,7 @@ from hamcrest import *
 
 import cloudant
 
+from nose.tools import nottest
 
 USERS = ["user_a", "user_b", "user_c"]
 LIMITS = ["user_limit_a", "user_limit_b"]
@@ -56,7 +57,7 @@ def test_scoped_to_user():
             c = srv.global_changes()
             assert_that(c.results, only_contains(has_entry("dbname", dbname)))
 
-
+@nottest
 def test_limit_as_admin_and_non_admin():
     srv = cloudant.get_server()
 

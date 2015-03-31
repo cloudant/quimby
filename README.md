@@ -25,6 +25,15 @@ you need to do in this repository is run:
 And you should get test output. If you don't have to wait for the virtual
 environment to be created then you probably need to install virtualenv.
 
+### Selective testing
+
+You can specify test to run using:
+
+    $ ./run all_docs/1001-maintenance-mode-test.py
+
+OR
+
+    $ ./run global_changes/0001-basic-api.py:test_db_event_types
 
 ToDo
 ----

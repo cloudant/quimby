@@ -77,7 +77,7 @@ def run_changes(num_results, **kwargs):
     nodes = cloudant.nodes(interface="public")
     try:
         for n in nodes[:-1]:
-            n.config_set("cloudant", "maintenance_mode", "true")
+            n.config_set("couchdb", "maintenance_mode", "true")
             try:
                 c = db.changes(**kwargs)
             except:
@@ -85,7 +85,7 @@ def run_changes(num_results, **kwargs):
                 raise
             assert_that(c.results, has_length(num_results))
         n = nodes[-1]
-        n.config_set("cloudant", "maintenance_mode", "true")
+        n.config_set("couchdb", "maintenance_mode", "true")
         try:
             c = db.changes(**kwargs)
         except:
@@ -94,4 +94,4 @@ def run_changes(num_results, **kwargs):
             raise AssertionError("Changes should not complete successfully")
     finally:
         for n in nodes:
-            n.config_set("cloudant", "maintenance_mode", "false")
+            n.config_set("couchdb", "maintenance_mode", "false")

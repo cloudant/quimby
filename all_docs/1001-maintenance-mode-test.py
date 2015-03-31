@@ -29,11 +29,11 @@ def test_all_docs():
     nodes = cloudant.nodes(interface="public")
     try:
         for n in nodes[:-1]:
-            n.config_set("cloudant", "maintenance_mode", "true")
+            n.config_set("couchdb", "maintenance_mode", "true")
             v = db.all_docs()
             assert_that(v.rows, has_length(100))
         n = nodes[-1]
-        n.config_set("cloudant", "maintenance_mode", "true")
+        n.config_set("couchdb", "maintenance_mode", "true")
         try:
             db.all_docs()
         except:
@@ -42,4 +42,4 @@ def test_all_docs():
             raise AssertionError("View should not complete successfully")
     finally:
         for n in nodes:
-            n.config_set("cloudant", "maintenance_mode", "false")
+            n.config_set("couchdb", "maintenance_mode", "false")

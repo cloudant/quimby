@@ -61,7 +61,7 @@ def test_doc_salt():
             shard.compact(wait=True)
 
     # Readding row to source view and dbcopy db
-    db.doc_save(doc1)
+    db.doc_save({"_id":"test"})
     db.view("foo", "bar", group=True)
     db.wait_for_indexers(design_doc="foo")
 

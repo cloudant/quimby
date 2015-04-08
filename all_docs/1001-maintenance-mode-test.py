@@ -14,7 +14,7 @@ def setup_module():
     docs = []
     for i in range(NUM_ROWS):
         docs.append({"value":i})
-    db.bulk_docs(docs)
+    db.bulk_docs(docs, w=3)
 
 
 def test_all_docs():

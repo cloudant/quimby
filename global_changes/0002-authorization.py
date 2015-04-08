@@ -58,7 +58,7 @@ def test_unauthorized_sees_nothing():
 def test_bad_role_sees_nothing():
     srv = cloudant.get_server()
     for user in UNAUTHED:
-        with srv.user_context(user, user):
+        with srv.user_context(user, user, owner=USERS[0]):
             try:
                 c = srv.global_changes()
             except Exception as e:

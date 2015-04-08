@@ -38,13 +38,13 @@ def test_db_event_types():
     db = srv.db(dbname)
 
     db.create(q=1)
-    c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
+    c = srv.global_changes(feed="continuous", since=seq, timeout=2000, limit=10)
     assert_that(c.results,
             has_item(has_entries({"dbname": dbname, "type": "created"})))
     seq = c.last_seq
 
     db.doc_save({"foo":"bar"})
-    c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
+    c = srv.global_changes(feed="continuous", since=seq, timeout=2000, limit=10)
     assert_that(c.results,
             has_item(has_entries({"dbname": dbname, "type": "updated"})))
 
@@ -53,8 +53,8 @@ def test_db_event_types():
     # Multiple db updatse gives a single row with a different
     # update sequence
     for i in range(25):
-        db.doc_save({"ohai": random.randint(0, 500)})
-    c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=50)
+        db.doc_save({"ohai": random.randint(0, 2000)})
+    c = srv.global_changes(feed="continuous", since=seq, timeout=2000, limit=50)
     expect = {
         "dbname": dbname,
         "type": "updated",
@@ -64,7 +64,7 @@ def test_db_event_types():
     seq = c.last_seq
 
     db.delete()
-    c = srv.global_changes(feed="continuous", since=seq, timeout=500, limit=10)
+    c = srv.global_changes(feed="continuous", since=seq, timeout=2000, limit=10)
     assert_that(c.results,
             has_item(has_entries({"dbname": dbname, "type": "deleted"})))
 
@@ -187,14 +187,14 @@ def long_poll_with_update():
 
 def test_continuous():
     srv = cloudant.get_server()
-    c = srv.global_changes(feed="continuous", timeout=500)
+    c = srv.global_changes(feed="continuous", timeout=2000)
     assert_that(c, has_property("last_seq"))
     assert_that(c.results, only_contains(has_key("seq")))
 
 
 def test_continuous_limit():
     srv = cloudant.get_server()
-    c = srv.global_changes(feed="continuous", limit=4, timeout=500)
+    c = srv.global_changes(feed="continuous", limit=4, timeout=2000)
     assert_that(c, has_property("last_seq"))
     assert_that(c.results, has_length(4))
     assert_that(c.results, only_contains(has_key("seq")))

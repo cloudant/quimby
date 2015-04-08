@@ -89,7 +89,7 @@ def run_changes(num_results, **kwargs):
         try:
             c = db.changes(**kwargs)
         except:
-            assert_that(srv.res.last_req.json(), has_entry("error", "nodedown"))
+            assert_that(srv.res.last_req.json(), has_key("error"))
         else:
             raise AssertionError("Changes should not complete successfully")
     finally:

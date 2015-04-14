@@ -82,7 +82,7 @@ def manually_set_cassim_security(roles=None):
     if roles is not None:
         sec_doc["cloudant"]["bar"] = roles
     suffix = current_db_suffix()
-    doc_id = "{0}/{1}/_security{2}".format(OWNER, SHARED_DB, suffix)
+    doc_id = "db/{0}/{1}/_security{2}".format(OWNER, SHARED_DB, suffix)
     escaped_doc_id = doc_id.replace('/', '%2f')
     sec_doc["_id"] = doc_id
 
@@ -123,7 +123,7 @@ def assert_user_roles(srv, user, roles):
 
 def assert_cassim_roles(roles):
     suffix = current_db_suffix()
-    url = "/cassim/{0}%2f{1}%2f_security{2}".format(OWNER, SHARED_DB, suffix)
+    url = "/cassim/db%2f{0}%2f{1}%2f_security{2}".format(OWNER, SHARED_DB, suffix)
     srv = cloudant.get_server()
     resp = srv.res.get(url).json()
     bar_roles = resp["cloudant"].get("bar", [])

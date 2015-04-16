@@ -117,6 +117,7 @@ def check_roles(srv, roles=[]):
 
 def assert_user_roles(srv, user, roles):
     set_security(srv, roles=roles)
+    time.sleep(1)
     with srv.user_context(user, user, owner=OWNER):
         check_roles(srv, roles)
 

@@ -9,7 +9,7 @@ import time
 import cloudant
 
 
-CASSIM_DB = "cassim"
+CASSIM_DB = "_metadata"
 SHARED_DB = "test_security_metadata"
 DB_PATH = "/" + SHARED_DB
 
@@ -123,7 +123,8 @@ def assert_user_roles(srv, user, roles):
 
 def assert_cassim_roles(roles):
     suffix = current_db_suffix()
-    url = "/cassim/db%2f{0}%2f{1}%2f_security{2}".format(OWNER, SHARED_DB, suffix)
+    url = "/{0}/db%2f{1}%2f{2}%2f_security{3}".format(
+        CASIM_DB, OWNER, SHARED_DB, suffix)
     srv = cloudant.get_server()
     resp = srv.res.get(url).json()
     bar_roles = resp["cloudant"].get("bar", [])

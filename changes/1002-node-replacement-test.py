@@ -33,6 +33,7 @@ def test_basic_node_replacement():
     # First run the changes on node1 so we get the
     # last update seq.
     node1 = cloudant.get_server(node="node1@127.0.0.1", interface="public")
+    node1_private = cloudant.get_server(node="node1@127.0.0.1", interface="private")
     db = node1.db("test_suite_db")
     c = db.changes(since=SINCE_SEQ)
     assert_that(c.results, has_length(NUM_ROWS))
@@ -42,10 +43,10 @@ def test_basic_node_replacement():
     # run the changes feed again to make sure that
     # we don't get all of the updates again.
     try:
-        node1.config_set("couchdb", "maintenance_mode", "true")
+        node1_private.config_set("couchdb", "maintenance_mode", "true")
         node3 = cloudant.get_server(node="node3@127.0.0.1", interface="public")
         db = node3.db("test_suite_db")
         c = db.changes(since=last_seq)
         assert_that(c.results, has_length(0))
     finally:
-        node1.config_set("couchdb", "maintenance_mode", "false")
+        node1_private.config_set("couchdb", "maintenance_mode", "false")

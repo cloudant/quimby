@@ -49,7 +49,7 @@ def run_view(do_reduce):
     """
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
-    nodes = cloudant.nodes(interface="public")
+    nodes = cloudant.nodes(interface="private")
     try:
         for n in nodes[:-1]:
             n.config_set("couchdb", "maintenance_mode", "true")

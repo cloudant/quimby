@@ -125,7 +125,7 @@ def assert_user_roles(srv, user, roles):
 def assert_cassim_roles(roles):
     suffix = current_db_suffix()
     url = "/{0}/db%2f{1}%2f{2}%2f_security{3}".format(
-        CASIM_DB, OWNER, SHARED_DB, suffix)
+        CASSIM_DB, OWNER, SHARED_DB, suffix)
     srv = cloudant.get_server()
     resp = srv.res.get(url).json()
     bar_roles = resp["cloudant"].get("bar", [])

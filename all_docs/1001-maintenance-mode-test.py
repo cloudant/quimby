@@ -26,20 +26,22 @@ def test_all_docs():
     # service first.
     srv = cloudant.get_server()
     db = srv.db("test_suite_db")
-    nodes = cloudant.nodes(interface="public")
+    nodes = cloudant.nodes(interface="private")
     try:
         for n in nodes[:-1]:
-            n.config_set("cloudant", "maintenance_mode", "true")
+            n.config_set("couchdb", "maintenance_mode", "true")
             v = db.all_docs()
             assert_that(v.rows, has_length(100))
         n = nodes[-1]
-        n.config_set("cloudant", "maintenance_mode", "true")
+        n.config_set("couchdb", "maintenance_mode", "true")
         try:
             db.all_docs()
         except:
             assert_that(srv.res.last_req.json(), has_key("error"))
+            assert_that(srv.res.last_req.json(),
+                has_entry("reason", "No DB shards could be opened."))
         else:
             raise AssertionError("View should not complete successfully")
     finally:
         for n in nodes:
-            n.config_set("cloudant", "maintenance_mode", "false")
+            n.config_set("couchdb", "maintenance_mode", "false")

@@ -34,6 +34,9 @@ ROLES_LIST = [
 
 def disable_cassim(srv):
     cdb = srv.db(CASSIM_DB)
+    nodes = cloudant.nodes(interface="private")
+    for n in nodes:
+            n.config_set("cassim", "enable", "false")
     with cdb.srv.res.return_errors():
         cdb.delete()
 
@@ -42,6 +45,9 @@ def enable_cassim():
     srv = cloudant.get_server()
     cdb = srv.db(CASSIM_DB)
     cdb.reset()
+    nodes = cloudant.nodes(interface="private")
+    for n in nodes:
+            n.config_set("cassim", "enable", "true")
 
 
 def setup_module():

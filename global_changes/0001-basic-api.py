@@ -13,7 +13,7 @@ import cloudant
 
 def setup():
     srv = cloudant.get_server()
-    db = srv.db("global_changes")
+    db = srv.db("_global_changes")
     if not db.exists():
         db.create()
 
@@ -71,7 +71,7 @@ def test_db_event_types():
 
 def test_limit():
     srv = cloudant.get_server()
-    db = srv.db("global_changes")
+    db = srv.db("_global_changes")
     assert_that(db.info()["doc_count"], greater_than_or_equal_to(4))
     c1 = srv.global_changes(limit=2)
     assert_that(c1.results, has_length(2))
@@ -115,7 +115,7 @@ def test_400_on_bad_paramters():
 
 def test_descending():
     srv = cloudant.get_server()
-    db = srv.db("global_changes")
+    db = srv.db("_global_changes")
     assert_that(db.info()["doc_count"], greater_than_or_equal_to(4))
     c = srv.global_changes(limit=5, descending=True)
     def int_seq(res):

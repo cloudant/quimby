@@ -6,7 +6,7 @@ import cloudant
 
 def setup():
     srv = cloudant.get_server()
-    db = srv.db("global_changes")
+    db = srv.db("_global_changes")
     if not db.exists():
         db.create()
 

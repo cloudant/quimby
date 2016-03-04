@@ -483,6 +483,11 @@ class Database(object):
         path = self.path("_design", ddoc, "_view", vname)
         return self._exec_view(path, **kwargs)
 
+    def search(self, ddoc, sname, query, **kwargs):
+        path = self.path("_design", ddoc, "_search", sname)
+        args = "&".join("%s=%s" % (k,v) for k,v in kwargs.items())
+        return self.srv.res.get(path, params='q='+query+'&'+args).json()
+
     def changes(self, **kwargs):
         is_continuous = kwargs.get("feed") == "continuous"
         params = self._params(kwargs)
